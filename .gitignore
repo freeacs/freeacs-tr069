@@ -1,0 +1,8 @@
+# JetBrains
+.idea
+
+# SBT / Maven
+target/
+
+# Mac OS
+.DS_STORE
