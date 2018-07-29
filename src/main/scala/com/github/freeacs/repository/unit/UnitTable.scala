@@ -1,14 +1,22 @@
 package com.github.freeacs.repository.unit
 
 import com.github.freeacs.repository.Db
+import com.github.freeacs.repository.profile.ProfileTable
+import com.github.freeacs.repository.unitType.UnitTypeTable
 
-trait UnitTable { this: Db =>
+trait UnitTable extends UnitTypeTable with ProfileTable { this: Db =>
   import config.profile.api._
 
   class Units(tag: Tag) extends Table[Unit](tag, "unit") {
     def unitId = column[String]("UNIT_ID", O.PrimaryKey)
     def profileId = column[Long]("PROFILE_ID")
+    def profileFK = foreignKey("PROFILE_FK", profileId, profiles)(
+      _.profileId, ForeignKeyAction.Restrict, ForeignKeyAction.Cascade
+    )
     def unitTypeId = column[Long]("UNIT_TYPE_ID")
+    def unitTypeFk = foreignKey("UNIT_TYPE_FK", unitTypeId, unitTypes)(
+      _.unitTypeId, ForeignKeyAction.Restrict, ForeignKeyAction.Cascade
+    )
 
     def * = (unitId, profileId, unitTypeId) <> (Unit.tupled, Unit.unapply)
   }
