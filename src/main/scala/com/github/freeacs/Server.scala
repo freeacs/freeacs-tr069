@@ -5,16 +5,13 @@ import akka.http.scaladsl.Http
 import akka.pattern.CircuitBreaker
 import akka.stream.ActorMaterializer
 import com.github.freeacs.repository.DbConfiguration
-import com.github.freeacs.repository.profile.{ProfileParameterRepository, ProfileRepository}
-import com.github.freeacs.repository.unit.{UnitParameterRepository, UnitRepository}
-import com.github.freeacs.repository.unitType.{UnitTypeParameterRepository, UnitTypeRepository}
 import com.github.freeacs.routes.Tr069Routes
+import com.github.freeacs.services.Tr069Services
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{FiniteDuration, _}
 import scala.io.StdIn
-import scala.concurrent.duration._
 
 object Server extends App with DbConfiguration {
 
@@ -27,14 +24,9 @@ object Server extends App with DbConfiguration {
   val resetTimeout: FiniteDuration = 10.seconds
   val cb = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
 
-  val unitTypeRepository = new UnitTypeRepository(dbConfig)
-  val unitTypeParameterRepository = new UnitTypeParameterRepository(dbConfig)
-  val profileRepository = new ProfileRepository(dbConfig)
-  val profileParameterRepository = new ProfileParameterRepository(dbConfig)
-  val unitRepository = new UnitRepository(dbConfig)
-  val unitParameterRepository = new UnitParameterRepository(dbConfig)
+  val tr069Services = new Tr069Services(dbConfig)
 
-  val tr069Routes = new Tr069Routes(cb, )
+  val tr069Routes = new Tr069Routes(cb, tr069Services)
 
   val config = ConfigFactory.load()
   val hostname = config.getString("http.host")

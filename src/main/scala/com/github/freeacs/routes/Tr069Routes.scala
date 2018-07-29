@@ -8,10 +8,11 @@ import akka.stream.Materializer
 import com.github.freeacs.entities.SOAPMethod._
 import com.github.freeacs.entities.{InformRequest, InformResponse, SOAPRequest, UnknownRequest}
 import com.github.freeacs.marshaller.Marshallers
+import com.github.freeacs.services.Tr069Services
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Tr069Routes(cb: CircuitBreaker) extends Directives with Marshallers {
+class Tr069Routes(cb: CircuitBreaker, services: Tr069Services) extends Directives with Marshallers {
 
   def routes(implicit mat: Materializer, ec: ExecutionContext): Route =
     logRequestResult("tr069") {
