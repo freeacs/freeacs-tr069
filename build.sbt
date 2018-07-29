@@ -4,6 +4,8 @@ version := "0.1"
 
 scalaVersion := "2.12.6"
 
+enablePlugins(JavaAppPackaging)
+
 val akkaHttpV = "10.1.3"
 val akkaV = "2.5.14"
 
