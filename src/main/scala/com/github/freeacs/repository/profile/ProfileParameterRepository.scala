@@ -6,10 +6,9 @@ import slick.jdbc.JdbcProfile
 
 import scala.concurrent.ExecutionContext
 
-class ProfileRepository(val config: DatabaseConfig[JdbcProfile])(implicit ec: ExecutionContext)
-  extends Db with ProfileTable {
+class ProfileParameterRepository(val config: DatabaseConfig[JdbcProfile])(implicit ec: ExecutionContext)
+  extends Db with ProfileParameterTable {
 
   import config.profile.api._
-
 
 }

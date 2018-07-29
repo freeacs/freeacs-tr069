@@ -4,5 +4,5 @@ import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 trait DbConfiguration {
-  lazy val config = DatabaseConfig.forConfig[JdbcProfile]("db")
+  lazy val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db")
 }
