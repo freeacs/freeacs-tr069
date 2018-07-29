@@ -23,12 +23,13 @@ object Server extends App {
   val resetTimeout: FiniteDuration = 10.seconds
   val cb = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
 
-  val tr069Routes: Tr069Routes = new Tr069Routes(cb)
+  val tr069Routes = new Tr069Routes(cb)
 
   val config = ConfigFactory.load()
   val hostname = config.getString("http.host")
   val port = config.getInt("http.port")
   val server = Http().bindAndHandle(tr069Routes.routes, hostname, port)
+
   StdIn.readLine()
 
   server.flatMap(_.unbind)
