@@ -15,5 +15,6 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-caching" % akkaHttpV,
   "com.typesafe.akka" %% "akka-http-xml" % akkaHttpV,
   "ch.qos.logback" % "logback-classic" % "1.2.3",
-  "org.scalatest" %% "scalatest" % "3.0.5" % "test"
+  "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+  "com.typesafe.slick" %% "slick" % "3.2.3"
 )
