@@ -1,3 +1,7 @@
 package com.github.freeacs.repository.unit
 
-case class UnitParameter(name: String, value: Option[String])
+final case class UnitParameter(
+  unitId: String,
+  unitTypeParameterId: Long,
+  value: Option[String]
+)
