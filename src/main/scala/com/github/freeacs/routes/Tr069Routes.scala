@@ -26,7 +26,11 @@ class Tr069Routes(cb: CircuitBreaker, services: Tr069Services) extends Directive
   def handle(soapRequest: SOAPRequest)(implicit ec: ExecutionContext): Future[ToResponseMarshallable] = {
     soapRequest match {
       case _: InformRequest =>
-        Future.successful(InformResponse())
+        services.unitTypeRepository.list()
+          .map(list => {
+            println(list)
+            InformResponse()
+          })
       case UnknownRequest(Empty) =>
         Future.successful(OK)
       case _ =>
