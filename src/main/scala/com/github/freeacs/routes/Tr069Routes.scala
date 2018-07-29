@@ -27,8 +27,16 @@ class Tr069Routes(cb: CircuitBreaker, services: Tr069Services) extends Directive
     soapRequest match {
       case _: InformRequest =>
         services.unitTypeRepository.list()
-          .map(list => {
-            println(list)
+          .flatMap(unittypes => {
+            println(unittypes)
+            services.profileRepository.list()
+          })
+          .flatMap(profiles => {
+            println(profiles)
+            services.unitRepository.list()
+          })
+          .map(units => {
+            println(units)
             InformResponse()
           })
       case UnknownRequest(Empty) =>

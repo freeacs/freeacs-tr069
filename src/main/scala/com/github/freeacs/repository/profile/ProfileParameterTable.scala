@@ -17,6 +17,8 @@ trait ProfileParameterTable extends ProfileTable with UnitTypeParameterTable { t
     )
     def value = column[String]("VALUE")
 
+    def profilePK = primaryKey("PROFILE_PK", (profileId, unitTypeParamId))
+
     def * = (profileId, unitTypeParamId, value.?) <> (ProfileParameter.tupled, ProfileParameter.unapply)
   }
 
