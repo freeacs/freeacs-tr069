@@ -67,7 +67,7 @@ trait Marshallers extends ScalaXmlSupport {
   def parseSOAPRequest(xml: Elem): SOAPRequest = {
     parseMethod(xml) match {
       case SOAPMethod.Inform =>
-        InformRequest(parseParameterValueStructs(xml))
+        InformRequest(parseDeviceIdStruct(xml), parseEventStructs(xml), parseParameterValueStructs(xml))
       case unknown =>
         UnknownRequest(unknown)
     }
@@ -81,6 +81,20 @@ trait Marshallers extends ScalaXmlSupport {
   def parseParameterValueStructs(xml: Elem): immutable.Seq[ParameterValueStruct] =
     (xml \\ "ParameterList" \\ "ParameterValueStruct").seq
       .map(p => ParameterValueStruct((p \\ "Name").text, (p \\ "Value").text))
+
+  def parseEventStructs(xml: Elem): immutable.Seq[EventStruct] =
+    (xml \\ "Event" \\ "EventStruct").seq
+      .map(p => EventStruct((p \\ "EventCode").text, (p \\ "CommandKey").text))
+
+  def parseDeviceIdStruct(xml: Elem): DeviceIdStruct = {
+    val deviceIdElem = xml \\ "DeviceId"
+    DeviceIdStruct(
+      (deviceIdElem \\ "Manufacturer").text,
+      (deviceIdElem \\ "OUI").text,
+      (deviceIdElem \\ "ProductClass").text,
+      (deviceIdElem \\ "SerialNumber").text
+    )
+  }
 
   def decodeData(data: ByteString, charset: HttpCharset): String =
     if (charset == HttpCharsets.`UTF-8`)
