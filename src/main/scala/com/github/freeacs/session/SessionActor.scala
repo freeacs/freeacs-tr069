@@ -1,16 +1,22 @@
 package com.github.freeacs.session
 
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 import com.github.freeacs.entities._
 import com.github.freeacs.services.Tr069Services
 
-class SessionActor(user: String, services: Tr069Services) extends Actor {
+class SessionActor(user: String, services: Tr069Services) extends Actor with ActorLogging {
+
+  log.info(s"Created session actor for $user")
+
+  var requests = Seq[SOAPRequest]()
 
   override def receive: Receive = {
-    case _: InformRequest =>
+    case inf: InformRequest =>
+      requests = requests :+ inf
       sender ! InformResponse()
-    case _: UnknownRequest =>
+    case EmptyRequest =>
       sender ! EmptyResponse
+      context.stop(self)
   }
 }
 

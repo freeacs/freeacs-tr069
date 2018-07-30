@@ -39,7 +39,7 @@ trait Marshallers extends ScalaXmlSupport {
         if (data.nonEmpty)
           parseSOAPRequest(XML.loadString(decodeData(data, charset)))
         else
-          UnknownRequest(SOAPMethod.Empty)
+          EmptyRequest
       }
 
   def parseSOAPRequest(xml: Elem): SOAPRequest =
@@ -47,7 +47,7 @@ trait Marshallers extends ScalaXmlSupport {
       case SOAPMethod.Inform =>
         InformXML.unMarshal(xml)
       case unknown =>
-        UnknownRequest(unknown)
+        EmptyRequest
     }
 
   def parseMethod(xml: Elem): SOAPMethod.Value =
