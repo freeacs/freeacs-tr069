@@ -15,7 +15,9 @@ class SessionActor(user: String, services: Tr069Services) extends Actor with Act
       requests = requests :+ inf
       sender ! InformResponse()
     case EmptyRequest =>
+      requests = requests :+ EmptyRequest
       sender ! EmptyResponse
+      log.info(requests.map(_.getClass.getSimpleName).mkString(", "))
       context.stop(self)
   }
 }
