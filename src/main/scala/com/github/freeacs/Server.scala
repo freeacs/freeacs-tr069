@@ -4,16 +4,17 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.pattern.CircuitBreaker
 import akka.stream.ActorMaterializer
-import com.github.freeacs.repository.DbConfiguration
 import com.github.freeacs.routes.Tr069Routes
 import com.github.freeacs.services.Tr069Services
 import com.typesafe.config.ConfigFactory
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.io.StdIn
 
-object Server extends App with DbConfiguration {
+object Server extends App {
 
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: ActorMaterializer = ActorMaterializer()
@@ -23,6 +24,8 @@ object Server extends App with DbConfiguration {
   val callTimeout: FiniteDuration = 1.seconds
   val resetTimeout: FiniteDuration = 10.seconds
   val cb = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
+
+  val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db")
 
   val tr069Services = new Tr069Services(dbConfig)
 
