@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.CircuitBreaker
 import akka.stream.Materializer
+import com.github.freeacs.entities
 import com.github.freeacs.entities.SOAPMethod._
 import com.github.freeacs.entities.{InformRequest, InformResponse, SOAPRequest, UnknownRequest}
 import com.github.freeacs.marshaller.Marshallers
@@ -26,19 +27,14 @@ class Tr069Routes(cb: CircuitBreaker, services: Tr069Services) extends Directive
   def handle(soapRequest: SOAPRequest)(implicit ec: ExecutionContext): Future[ToResponseMarshallable] = {
     soapRequest match {
       case _: InformRequest =>
-        services.unitTypeRepository.list()
-          .flatMap(unittypes => {
-            println(unittypes)
-            services.profileRepository.list()
-          })
-          .flatMap(profiles => {
-            println(profiles)
-            services.unitRepository.list()
-          })
-          .map(units => {
-            println(units)
-            InformResponse()
-          })
+        for {
+          unitTypes <- services.unitTypeRepository.list()
+          profiles <- services.profileRepository.list()
+          units <- services.unitRepository.list()
+        } yield {
+          println(unitTypes, profiles, units)
+          InformResponse()
+        }
       case UnknownRequest(Empty) =>
         Future.successful(OK)
       case _ =>
