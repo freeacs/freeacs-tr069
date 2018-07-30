@@ -12,9 +12,10 @@ import com.github.freeacs.services.Tr069Services
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Tr069Routes(cb: CircuitBreaker, services: Tr069Services) extends Directives with Marshallers {
+class Tr069Routes(cb: CircuitBreaker, services: Tr069Services)
+                 (implicit mat: Materializer, ec: ExecutionContext) extends Directives with Marshallers {
 
-  def routes(implicit mat: Materializer, ec: ExecutionContext): Route =
+  def routes: Route =
     logRequestResult("tr069") {
       (post & entity(as[SOAPRequest])) { soapRequest =>
         path("tr069") {
@@ -23,7 +24,7 @@ class Tr069Routes(cb: CircuitBreaker, services: Tr069Services) extends Directive
       }
     }
 
-  def handle(soapRequest: SOAPRequest)(implicit ec: ExecutionContext): Future[ToResponseMarshallable] = {
+  def handle(soapRequest: SOAPRequest): Future[ToResponseMarshallable] = {
     soapRequest match {
       case inR: InformRequest =>
         for {

@@ -5,7 +5,7 @@ import com.github.freeacs.entities.{DeviceIdStruct, EventStruct, ParameterValueS
 import scala.collection.immutable
 import scala.xml.Elem
 
-object Envelope {
+object EnvelopeXML {
   def withEnvelope(xml: Elem) =
     <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
                       xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"

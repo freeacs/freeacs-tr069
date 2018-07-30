@@ -1,7 +1,7 @@
 package com.github.freeacs.marshaller
 
 import com.github.freeacs.entities._
-import Envelope._
+import EnvelopeXML._
 import scala.xml.Elem
 
 object InformXML {
