@@ -26,8 +26,8 @@ object Server extends App {
   val cb = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
 
   val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db")
-  val authService = new AuthenticationService
   val tr069Services = new Tr069Services(dbConfig)
+  val authService = new AuthenticationService(tr069Services.unitParameterRepository)
   val tr069Routes = new Tr069Routes(cb, tr069Services, authService)
 
   val config = ConfigFactory.load()

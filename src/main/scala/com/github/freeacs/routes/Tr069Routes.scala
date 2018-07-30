@@ -13,12 +13,12 @@ import com.github.freeacs.services.Tr069Services
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Tr069Routes(cb: CircuitBreaker, services: Tr069Services, authService: AuthenticationService)
+class Tr069Routes(cb: CircuitBreaker, services: Tr069Services, auth: AuthenticationService)
                  (implicit mat: Materializer, ec: ExecutionContext) extends Directives with Marshallers {
 
   def routes: Route =
-    logRequestResult("tr069requestresponse") {
-      authenticateBasicAsync("FreeACS", authService.myUserPassAuthenticator) { user =>
+    logRequestResult("tr069") {
+      authenticateBasicAsync("FreeACS", auth.myUserPassAuthenticator) { user =>
         (post & entity(as[SOAPRequest])) { soapRequest =>
           path("tr069") {
             complete(cb.withCircuitBreaker(handle(soapRequest, user)))
