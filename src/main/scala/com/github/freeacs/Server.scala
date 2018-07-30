@@ -10,29 +10,28 @@ import com.typesafe.config.ConfigFactory
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration._
 import scala.io.StdIn
 
 object Server extends App {
 
-  implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
-  implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+  implicit val system = ActorSystem()
+  implicit val mat = ActorMaterializer()
+  implicit val ec = system.dispatcher
 
-  private val maxFailures = 3
-  private val callTimeout = 1.seconds
-  private val resetTimeout = 10.seconds
-  private val cb = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
+  val maxFailures = 3
+  val callTimeout = 1.seconds
+  val resetTimeout = 10.seconds
+  val cb = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
 
-  private val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db")
-  private val tr069Services = new Tr069Services(dbConfig)
-  private val tr069Routes = new Tr069Routes(cb, tr069Services)
+  val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db")
+  val tr069Services = new Tr069Services(dbConfig)
+  val tr069Routes = new Tr069Routes(cb, tr069Services)
 
-  private val config = ConfigFactory.load()
-  private val hostname = config.getString("http.host")
-  private val port = config.getInt("http.port")
-  private val server = Http().bindAndHandle(tr069Routes.routes, hostname, port)
+  val config = ConfigFactory.load()
+  val hostname = config.getString("http.host")
+  val port = config.getInt("http.port")
+  val server = Http().bindAndHandle(tr069Routes.routes, hostname, port)
 
   StdIn.readLine()
 
