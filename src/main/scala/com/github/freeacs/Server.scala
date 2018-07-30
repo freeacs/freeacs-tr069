@@ -20,21 +20,19 @@ object Server extends App {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
-  val maxFailures: Int = 3
-  val callTimeout: FiniteDuration = 1.seconds
-  val resetTimeout: FiniteDuration = 10.seconds
-  val cb = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
+  private val maxFailures = 3
+  private val callTimeout = 1.seconds
+  private val resetTimeout = 10.seconds
+  private val cb = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
 
-  val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db")
+  private val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db")
+  private val tr069Services = new Tr069Services(dbConfig)
+  private val tr069Routes = new Tr069Routes(cb, tr069Services)
 
-  val tr069Services = new Tr069Services(dbConfig)
-
-  val tr069Routes = new Tr069Routes(cb, tr069Services)
-
-  val config = ConfigFactory.load()
-  val hostname = config.getString("http.host")
-  val port = config.getInt("http.port")
-  val server = Http().bindAndHandle(tr069Routes.routes, hostname, port)
+  private val config = ConfigFactory.load()
+  private val hostname = config.getString("http.host")
+  private val port = config.getInt("http.port")
+  private val server = Http().bindAndHandle(tr069Routes.routes, hostname, port)
 
   StdIn.readLine()
 
