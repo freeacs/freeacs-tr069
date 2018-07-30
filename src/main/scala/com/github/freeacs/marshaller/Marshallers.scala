@@ -15,7 +15,7 @@ import scala.xml.{Elem, NodeSeq, XML}
 
 trait Marshallers extends ScalaXmlSupport {
 
-  implicit def informResponseXmlFormat =
+  implicit def soapResponseXmlFormat =
     Marshaller.opaque[SOAPResponse, NodeSeq] {
       case inform: InformResponse =>
         InformXML.marshal(inform)
