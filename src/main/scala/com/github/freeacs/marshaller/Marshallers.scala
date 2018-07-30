@@ -52,7 +52,7 @@ trait Marshallers extends ScalaXmlSupport {
 
   def parseMethod(xml: Elem): SOAPMethod.Value =
     (xml \\ "Body").headOption.flatMap(_.child.collectFirst {
-      case el: Elem => Try(SOAPMethod.withName(el.label)).getOrElse(SOAPMethod.Unknown)
+      case el: Elem => Try(SOAPMethod.withName(el.label)).getOrElse(SOAPMethod.Empty)
     }) getOrElse SOAPMethod.Empty
 
   def decodeData(data: ByteString, charset: HttpCharset): String =
