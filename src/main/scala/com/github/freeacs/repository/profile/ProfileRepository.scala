@@ -13,4 +13,6 @@ class ProfileRepository(val config: DatabaseConfig[JdbcProfile])(implicit ec: Ex
 
   def list(): Future[Seq[Profile]] =
     db.run(profiles.result)
+
+  def save(profile: Profile): Future[Profile] = ???
 }

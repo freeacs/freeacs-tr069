@@ -1,7 +1,7 @@
 package com.github.freeacs.repository.profile
 
 final case class Profile(
-  profileId: Option[Long],
+  profileId: Option[Long] = None,
   profileName: String,
   unitTypeId: Long
 )

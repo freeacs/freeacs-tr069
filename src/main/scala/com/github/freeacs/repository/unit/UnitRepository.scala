@@ -12,6 +12,10 @@ class UnitRepository(val config: DatabaseConfig[JdbcProfile])(implicit ec: Execu
   import config.profile.api._
 
   def list(): Future[Seq[Unit]] =
-    db.run(units.result)
+  db.run(units.result)
 
+  def exists(unitId: String): Future[Boolean] =
+    db.run(units.filter(_.unitId === unitId).exists.result)
+
+  def save(unit: Unit): Future[Unit] = ???
 }

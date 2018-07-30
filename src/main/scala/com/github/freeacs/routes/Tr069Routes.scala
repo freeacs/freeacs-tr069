@@ -1,24 +1,30 @@
 package com.github.freeacs.routes
 
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.CircuitBreaker
 import akka.stream.Materializer
-import com.github.freeacs.auth.AuthenticationService
-import com.github.freeacs.entities.SOAPMethod._
-import com.github.freeacs.entities.{InformRequest, InformResponse, SOAPRequest, UnknownRequest}
+import com.github.freeacs.entities._
 import com.github.freeacs.marshaller.Marshallers
 import com.github.freeacs.services.Tr069Services
+import com.github.freeacs.session.SessionActor
+import akka.pattern.ask
+import akka.util.Timeout
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.language.postfixOps
 
-class Tr069Routes(cb: CircuitBreaker, services: Tr069Services, auth: AuthenticationService)
-                 (implicit mat: Materializer, ec: ExecutionContext) extends Directives with Marshallers {
+class Tr069Routes(cb: CircuitBreaker, services: Tr069Services)
+                 (implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext, timeout: Timeout)
+  extends Directives with Marshallers {
+
+  val REALM = "FreeACS"
 
   def routes: Route =
     logRequestResult("tr069") {
-      authenticateBasicAsync("FreeACS", auth.myUserPassAuthenticator) { user =>
+      authenticateBasicAsync(REALM, services.authService.authenticator) { user =>
         (post & entity(as[SOAPRequest])) { soapRequest =>
           path("tr069") {
             complete(cb.withCircuitBreaker(handle(soapRequest, user)))
@@ -28,20 +34,21 @@ class Tr069Routes(cb: CircuitBreaker, services: Tr069Services, auth: Authenticat
     }
 
   def handle(soapRequest: SOAPRequest, user: String): Future[ToResponseMarshallable] = {
-    soapRequest match {
-      case inform: InformRequest =>
-        for {
-          unitParams <- services.unitParameterRepository.getUnitParameters(user)
-        } yield {
-          println(unitParams)
-          println(inform)
-          InformResponse()
-        }
-      case UnknownRequest(Empty) =>
-        Future.successful(OK)
-      case _ =>
-        Future.successful(NotImplemented)
+    val userActor = Await.result(getSessionActor(user), timeout.duration)
+    (userActor ? soapRequest).map(_.asInstanceOf[SOAPResponse]).map {
+      case informResponse: InformResponse =>
+        informResponse
+      case EmptyResponse =>
+        StatusCodes.OK
     }
+  }
+
+  def getSessionActor(user: String): Future[ActorRef] = {
+    system.actorSelection(s"user/session-$user")
+      .resolveOne()
+      .recover { case _: Exception =>
+        system.actorOf(SessionActor.props(user, services), s"session-$user")
+      }
   }
 
 }

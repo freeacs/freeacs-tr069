@@ -1,6 +1,8 @@
 package com.github.freeacs.repository.unit
 
+import com.github.freeacs.config.SystemParameters
 import com.github.freeacs.repository.Db
+import com.github.freeacs.repository.unitType.UnitTypeParameter
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
@@ -13,6 +15,12 @@ class UnitParameterRepository(val config: DatabaseConfig[JdbcProfile])(implicit 
 
   def list(): Future[Seq[UnitParameter]] =
     db.run(unitParameters.result)
+
+  def getUnitSecret(unitId: String): Future[Option[String]] =
+    db.run(unitParameters.join(unitTypeParameters).on(_.unitTypeParamId === _.unitTypeParamId)
+      .filter(_._2.name === SystemParameters.SECRET)
+      .map(_._1.value)
+      .result.headOption)
 
   def getUnitParameters(unitId: String): Future[Seq[UnitParameter]] =
     db.run(unitParameters.filter(_.unitId === unitId).result)
