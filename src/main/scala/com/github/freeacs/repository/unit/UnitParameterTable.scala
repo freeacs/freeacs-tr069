@@ -8,7 +8,7 @@ trait UnitParameterTable extends UnitTypeParameterTable { this: Db =>
 
   class UnitParameters(tag: Tag) extends Table[UnitParameter](tag, "unit_param") {
     def unitId = column[String]("UNIT_ID")
-    def unitTypeParamId = column[Long]("UNIT_TYPE_PARAM_ ID")
+    def unitTypeParamId = column[Long]("UNIT_TYPE_PARAM_ID")
     def unitTypeParamFk = foreignKey("UNIT_TYPE_PARAM_FK", unitTypeParamId, unitTypeParameters)(
       _.unitTypeParamId, ForeignKeyAction.Restrict, ForeignKeyAction.Cascade
     )

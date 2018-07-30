@@ -21,11 +21,11 @@ object EnvelopeXML {
     </soapenv:Envelope>
 
   def parseParameterValueStructs(xml: Elem): immutable.Seq[ParameterValueStruct] =
-    (xml \\ "ParameterList" \\ "ParameterValueStruct").seq
+    (xml \\ "ParameterValueStruct").seq
       .map(p => ParameterValueStruct((p \\ "Name").text, (p \\ "Value").text))
 
   def parseEventStructs(xml: Elem): immutable.Seq[EventStruct] =
-    (xml \\ "Event" \\ "EventStruct").seq
+    (xml \\ "EventStruct").seq
       .map(p => EventStruct((p \\ "EventCode").text, (p \\ "CommandKey").text))
 
   def parseDeviceIdStruct(xml: Elem): DeviceIdStruct = {

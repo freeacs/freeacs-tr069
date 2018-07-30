@@ -13,4 +13,11 @@ class UnitParameterRepository(val config: DatabaseConfig[JdbcProfile])(implicit 
 
   def list(): Future[Seq[UnitParameter]] =
     db.run(unitParameters.result)
+
+  def getUnitParameters(unitId: String): Future[Seq[UnitParameter]] =
+    db.run(unitParameters.filter(_.unitId === unitId).result)
+
+  def updateUnitParameters(params: Seq[UnitParameter]): Future[Int] =
+    db.run(DBIO.sequence(params.map(p => unitParameters.insertOrUpdate(p))).transactionally)
+      .map(_.sum)
 }

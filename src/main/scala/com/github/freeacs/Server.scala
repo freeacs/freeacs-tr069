@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.pattern.CircuitBreaker
 import akka.stream.ActorMaterializer
+import com.github.freeacs.auth.AuthenticationService
 import com.github.freeacs.routes.Tr069Routes
 import com.github.freeacs.services.Tr069Services
 import com.typesafe.config.ConfigFactory
@@ -25,8 +26,9 @@ object Server extends App {
   val cb = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
 
   val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db")
+  val authService = new AuthenticationService
   val tr069Services = new Tr069Services(dbConfig)
-  val tr069Routes = new Tr069Routes(cb, tr069Services)
+  val tr069Routes = new Tr069Routes(cb, tr069Services, authService)
 
   val config = ConfigFactory.load()
   val hostname = config.getString("http.host")

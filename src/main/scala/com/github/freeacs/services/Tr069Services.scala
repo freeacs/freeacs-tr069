@@ -17,6 +17,4 @@ class Tr069Services(config: DatabaseConfig[JdbcProfile])(implicit ec: ExecutionC
 
   val unitRepository = new UnitRepository(config)
   val unitParameterRepository = new UnitParameterRepository(config)
-
-
 }
