@@ -1,10 +1,10 @@
 package com.github.freeacs.repository.unit
 
-import com.github.freeacs.repository.Db
+import com.github.freeacs.repository.Database
 import com.github.freeacs.repository.profile.ProfileParameterTable
 import com.github.freeacs.repository.unitType.UnitTypeTable
 
-trait UnitTable extends UnitTypeTable with ProfileParameterTable { this: Db =>
+trait UnitTable extends UnitTypeTable with ProfileParameterTable { this: Database =>
   import config.profile.api._
 
   class Units(tag: Tag) extends Table[Unit](tag, "UNIT") {

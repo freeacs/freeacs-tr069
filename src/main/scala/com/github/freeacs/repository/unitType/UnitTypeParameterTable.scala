@@ -1,8 +1,8 @@
 package com.github.freeacs.repository.unitType
 
-import com.github.freeacs.repository.Db
+import com.github.freeacs.repository.Database
 
-trait UnitTypeParameterTable extends UnitTypeTable { this: Db =>
+trait UnitTypeParameterTable extends UnitTypeTable { this: Database =>
   import config.profile.api._
 
   class UnitTypeParameters(tag: Tag) extends Table[UnitTypeParameter](tag, "UNIT_TYPE_PARAM") {

@@ -1,14 +1,14 @@
 package com.github.freeacs.repository.unit
 
 import com.github.freeacs.config.SystemParameters
-import com.github.freeacs.repository.Db
+import com.github.freeacs.repository.Database
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class UnitParameterRepository(val config: DatabaseConfig[JdbcProfile])(implicit ec: ExecutionContext)
-  extends Db with UnitParameterTable {
+  extends Database with UnitParameterTable {
 
   import config.profile.api._
 

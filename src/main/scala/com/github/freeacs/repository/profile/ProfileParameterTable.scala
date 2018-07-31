@@ -1,9 +1,9 @@
 package com.github.freeacs.repository.profile
 
-import com.github.freeacs.repository.Db
+import com.github.freeacs.repository.Database
 import com.github.freeacs.repository.unitType.{UnitTypeParameterTable, UnitTypeTable}
 
-trait ProfileParameterTable extends ProfileTable with UnitTypeParameterTable { this: Db =>
+trait ProfileParameterTable extends ProfileTable with UnitTypeParameterTable { this: Database =>
   import config.profile.api._
 
   class ProfileParameters(tag: Tag) extends Table[ProfileParameter](tag, "PROFILE_PARAM") {

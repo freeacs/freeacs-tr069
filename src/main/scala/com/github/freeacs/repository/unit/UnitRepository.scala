@@ -1,13 +1,13 @@
 package com.github.freeacs.repository.unit
 
-import com.github.freeacs.repository.Db
+import com.github.freeacs.repository.Database
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class UnitRepository(val config: DatabaseConfig[JdbcProfile])(implicit ec: ExecutionContext)
-  extends Db with UnitTable {
+  extends Database with UnitTable {
 
   import config.profile.api._
 
