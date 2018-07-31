@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.pattern.CircuitBreaker
 import akka.stream.ActorMaterializer
-import akka.util.Timeout
 import com.github.freeacs.routes.Tr069Routes
 import com.github.freeacs.services.Tr069Services
 import com.typesafe.config.ConfigFactory
@@ -20,8 +19,10 @@ object Server extends App {
   implicit val mat = ActorMaterializer()
   implicit val ec = system.dispatcher
 
-  implicit val timeout = Timeout(5.seconds)
-  val cb = new CircuitBreaker(system.scheduler, 3, timeout.duration, 10.seconds)
+  val maxFailures: Int = 3
+  val callTimeout: FiniteDuration = 1.second
+  val resetTimeout: FiniteDuration = 10.seconds
+  val cb = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
   val sysConfig = ConfigFactory.load()
   val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db")
 
