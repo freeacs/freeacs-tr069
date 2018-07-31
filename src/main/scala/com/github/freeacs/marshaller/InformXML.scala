@@ -5,7 +5,7 @@ import EnvelopeXML._
 import scala.xml.Elem
 
 object InformXML {
-  def marshal(informResponse: InformResponse) =
+  def marshal(informResponse: InformResponse): Elem =
     withEnvelope(
       <cwmp:InformResponse>
         <MaxEnvelopes>{informResponse.maxEnvelopes}</MaxEnvelopes>

@@ -6,7 +6,7 @@ import scala.collection.immutable
 import scala.xml.Elem
 
 object EnvelopeXML {
-  def withEnvelope(xml: Elem) =
+  def withEnvelope(xml: Elem): Elem =
     <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
                       xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
                       xmlns:xsd="http://www.w3.org/2001/XMLSchema"
