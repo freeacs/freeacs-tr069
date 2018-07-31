@@ -2,7 +2,6 @@ package com.github.freeacs.repository.unit
 
 import com.github.freeacs.config.SystemParameters
 import com.github.freeacs.repository.Db
-import com.github.freeacs.repository.unitType.UnitTypeParameter
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 

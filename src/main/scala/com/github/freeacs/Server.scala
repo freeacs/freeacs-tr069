@@ -4,35 +4,30 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.pattern.CircuitBreaker
 import akka.stream.ActorMaterializer
+import com.github.freeacs.config.Configuration
 import com.github.freeacs.routes.Tr069Routes
 import com.github.freeacs.services.Tr069Services
 import com.typesafe.config.ConfigFactory
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
 
-import scala.concurrent.duration._
+import scala.concurrent.ExecutionContextExecutor
 import scala.io.StdIn
+import scala.language.postfixOps
 
 object Server extends App {
 
-  implicit val system = ActorSystem()
-  implicit val mat = ActorMaterializer()
-  implicit val ec = system.dispatcher
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val mat: ActorMaterializer = ActorMaterializer()
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
 
-  val maxFailures: Int = 3
-  val callTimeout: FiniteDuration = 1.second
-  val resetTimeout: FiniteDuration = 10.seconds
+  val Configuration = new Configuration(ConfigFactory.load())
+  import Configuration._
+
   val cb = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
 
-  val sysConfig = ConfigFactory.load()
-  val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db")
+  val services = new Tr069Services(dbConfig)
+  val routes = new Tr069Routes(cb, services, sessionLookupTimeout)
 
-  val tr069Services = new Tr069Services(dbConfig, sysConfig)
-  val tr069Routes = new Tr069Routes(cb, tr069Services)
-
-  val hostname = sysConfig.getString("http.host")
-  val port = sysConfig.getInt("http.port")
-  val server = Http().bindAndHandle(tr069Routes.routes, hostname, port)
+  val server = Http().bindAndHandle(routes.routes, hostname, port)
 
   StdIn.readLine()
 

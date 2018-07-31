@@ -61,7 +61,7 @@ object SystemParameters {
   val PORT = "System.X_FREEACS-COM.Device.PublicPort"
   val GUI_URL = "System.X_FREEACS-COM.Device.GUIURL"
 
-  var COMMON_PARAMETERS = Map[String, String](
+  var COMMON_PARAMETERS: Map[String, String] = Map[String, String](
     DESIRED_SOFTWARE_VERSION -> "X",
     SOFTWARE_URL -> "X",
     PROVISIONING_MODE -> "X",
