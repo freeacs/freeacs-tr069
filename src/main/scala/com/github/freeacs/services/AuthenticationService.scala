@@ -13,8 +13,6 @@ class AuthenticationService(services: Tr069Services)(implicit ex: ExecutionConte
           .map {
             case Some(secret) if p.verify(secret) =>
               Some(id)
-            case None if services.discoveryMode =>
-              Some(id)
             case _ =>
               None
           }

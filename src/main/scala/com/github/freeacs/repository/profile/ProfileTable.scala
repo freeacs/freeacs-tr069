@@ -6,7 +6,7 @@ import com.github.freeacs.repository.unitType.UnitTypeTable
 trait ProfileTable extends UnitTypeTable { this: Db =>
   import config.profile.api._
 
-  class Profiles(tag: Tag) extends Table[Profile](tag, "profile") {
+  class Profiles(tag: Tag) extends Table[Profile](tag, "PROFILE") {
     def profileId = column[Long]("PROFILE_ID", O.PrimaryKey, O.AutoInc)
     def profileName = column[String]("PROFILE_NAME")
     def unitTypeId = column[Long]("UNIT_TYPE_ID")

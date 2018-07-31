@@ -19,7 +19,5 @@ class Tr069Services(dbConfig: DatabaseConfig[JdbcProfile], sysConfig: Config)(im
   val unitRepository = new UnitRepository(dbConfig)
   val unitParameterRepository = new UnitParameterRepository(dbConfig)
 
-  val discoveryMode = sysConfig.getBoolean("server.discovery.mode")
-
   val authService = new AuthenticationService(this)
 }

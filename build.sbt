@@ -20,5 +20,6 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.5" % "test",
   "com.typesafe.slick" %% "slick" % "3.2.3",
   "com.typesafe.slick" %% "slick-hikaricp" % "3.2.3",
-  "mysql" % "mysql-connector-java" % "8.0.11"
+  "mysql" % "mysql-connector-java" % "8.0.11",
+  "com.h2database" % "h2" % "1.4.197"
 )

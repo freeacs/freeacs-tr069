@@ -5,7 +5,7 @@ import com.github.freeacs.repository.Db
 trait UnitTypeParameterTable extends UnitTypeTable { this: Db =>
   import config.profile.api._
 
-  class UnitTypeParameters(tag: Tag) extends Table[UnitTypeParameter](tag, "unit_type_param") {
+  class UnitTypeParameters(tag: Tag) extends Table[UnitTypeParameter](tag, "UNIT_TYPE_PARAM") {
     def unitTypeParamId = column[Long]("UNIT_TYPE_PARAM_ID", O.PrimaryKey, O.AutoInc)
     def unitTypeId = column[Long]("UNIT_TYPE_ID")
     def name = column[String]("NAME")

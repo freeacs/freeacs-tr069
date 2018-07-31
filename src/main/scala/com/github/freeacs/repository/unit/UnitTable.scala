@@ -7,7 +7,7 @@ import com.github.freeacs.repository.unitType.UnitTypeTable
 trait UnitTable extends UnitTypeTable with ProfileParameterTable { this: Db =>
   import config.profile.api._
 
-  class Units(tag: Tag) extends Table[Unit](tag, "unit") {
+  class Units(tag: Tag) extends Table[Unit](tag, "UNIT") {
     def unitId = column[String]("UNIT_ID", O.PrimaryKey)
     def profileId = column[Long]("PROFILE_ID")
     def profileFK = foreignKey("PROFILE_FK", profileId, profiles)(

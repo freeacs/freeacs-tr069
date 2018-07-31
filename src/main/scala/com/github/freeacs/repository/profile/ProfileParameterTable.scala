@@ -6,7 +6,7 @@ import com.github.freeacs.repository.unitType.{UnitTypeParameterTable, UnitTypeT
 trait ProfileParameterTable extends ProfileTable with UnitTypeParameterTable { this: Db =>
   import config.profile.api._
 
-  class ProfileParameters(tag: Tag) extends Table[ProfileParameter](tag, "profile_param") {
+  class ProfileParameters(tag: Tag) extends Table[ProfileParameter](tag, "PROFILE_PARAM") {
     def profileId = column[Long]("PROFILE_ID")
     def profileFk = foreignKey("PROFILE_FK", profileId, profiles)(
       _.profileId, ForeignKeyAction.Restrict, ForeignKeyAction.Cascade

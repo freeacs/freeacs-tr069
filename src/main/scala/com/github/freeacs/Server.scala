@@ -23,6 +23,7 @@ object Server extends App {
   val callTimeout: FiniteDuration = 1.second
   val resetTimeout: FiniteDuration = 10.seconds
   val cb = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
+
   val sysConfig = ConfigFactory.load()
   val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db")
 
