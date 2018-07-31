@@ -1,5 +1,6 @@
 package com.github.freeacs.services
 
+
 import com.github.freeacs.repository.profile.{ProfileParameterRepository, ProfileRepository}
 import com.github.freeacs.repository.unit.{UnitParameterRepository, UnitRepository}
 import com.github.freeacs.repository.unitType.{UnitTypeParameterRepository, UnitTypeRepository}
@@ -7,7 +8,10 @@ import com.typesafe.config.Config
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
+import scala.language.postfixOps
 
 class Tr069Services(dbConfig: DatabaseConfig[JdbcProfile], sysConfig: Config)(implicit ec: ExecutionContext) {
   val unitTypeRepository = new UnitTypeRepository(dbConfig)
@@ -20,4 +24,6 @@ class Tr069Services(dbConfig: DatabaseConfig[JdbcProfile], sysConfig: Config)(im
   val unitParameterRepository = new UnitParameterRepository(dbConfig)
 
   val authService = new AuthenticationService(this)
+
+  val sessionLookupTimeout: FiniteDuration = sysConfig.getInt("session.lookup.timeout") seconds
 }

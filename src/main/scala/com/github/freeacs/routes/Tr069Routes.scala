@@ -10,7 +10,6 @@ import com.github.freeacs.marshaller.Marshallers
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.SessionActor
 
-import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
@@ -51,7 +50,7 @@ class Tr069Routes(cb: CircuitBreaker, services: Tr069Services)
     val actorName = s"session-$user"
     val actorProps = SessionActor.props(user, services)
     system.actorSelection(s"user/$actorName")
-      .resolveOne(Duration(1, SECONDS))
+      .resolveOne(services.sessionLookupTimeout)
       .map(actorRef => TypedActor(system).typedActorOf(actorProps, actorRef))
       .recover { case _: Exception =>
         TypedActor(system).typedActorOf(actorProps, actorName)
