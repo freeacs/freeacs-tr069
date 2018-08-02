@@ -27,7 +27,7 @@ class SessionActor(user: String, services: Tr069Services)(implicit ec: Execution
           pipe(Future.successful(response)) to sender
         case EmptyRequest =>
           requests = requests :+ (request, None)
-          log.info(requests.map(tuple => (tuple._1.getClass.getSimpleName, tuple._2.map(_.getClass.getSimpleName))).mkString(", "))
+          log.info(requests.map(requestToString).mkString(", "))
           sender ! None
           self ! PoisonPill
       }
@@ -36,4 +36,6 @@ class SessionActor(user: String, services: Tr069Services)(implicit ec: Execution
       self ! PoisonPill
   }
 
+  private def requestToString(tuple: (SOAPRequest, Option[SOAPResponse])): (String, Option[String]) =
+    (tuple._1.getClass.getSimpleName, tuple._2.map(_.getClass.getSimpleName))
 }
