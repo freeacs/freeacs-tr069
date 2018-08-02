@@ -2,6 +2,7 @@ package com.github.freeacs.repository.unit
 
 import com.github.freeacs.config.SystemParameters
 import com.github.freeacs.repository.Database
+import com.github.freeacs.repository.unitType.UnitTypeParameter
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
@@ -21,8 +22,8 @@ class UnitParameterRepository(val config: DatabaseConfig[JdbcProfile])(implicit 
       .map(_._1.value)
       .result.headOption)
 
-  def getUnitParameters(unitId: String): Future[Seq[UnitParameter]] =
-    db.run(unitParameters.filter(_.unitId === unitId).result)
+  def getUnitParameters(unitId: String): Future[Seq[(UnitParameter, UnitTypeParameter)]] =
+    db.run(unitParameters.join(unitTypeParameters).on(_.unitTypeParamId === _.unitTypeParamId).filter(_._1.unitId === unitId).result)
 
   def updateUnitParameters(params: Seq[UnitParameter]): Future[Int] =
     db.run(DBIO.sequence(params.map(p => unitParameters.insertOrUpdate(p))).transactionally)

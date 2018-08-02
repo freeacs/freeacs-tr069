@@ -1,4 +1,4 @@
-package com.github.freeacs.entities
+package com.github.freeacs.xml
 
 import java.net.URLDecoder
 
@@ -8,7 +8,7 @@ final case class DeviceIdStruct(
   productClass: String,
   serialNumber: String
 ) {
-  val unitId = {
+  val unitId: String = {
     var unitId: String = null
     if (productClass != null && !productClass.trim.equals("")) {
       unitId = s"$oui-$productClass-$serialNumber"

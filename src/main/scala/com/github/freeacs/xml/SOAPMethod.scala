@@ -1,4 +1,4 @@
-package com.github.freeacs.entities
+package com.github.freeacs.xml
 
 object SOAPMethod extends Enumeration {
   type Method = Value

@@ -1,4 +1,4 @@
-package com.github.freeacs.marshaller
+package com.github.freeacs.xml.marshaller
 
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.{Marshal, Marshaller, ToResponseMarshaller}
@@ -7,7 +7,7 @@ import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.github.freeacs.entities._
+import com.github.freeacs.xml._
 
 import scala.concurrent.ExecutionContext
 import scala.util.Try

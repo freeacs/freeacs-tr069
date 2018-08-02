@@ -1,14 +1,18 @@
 package com.github.freeacs.routes
 
-import akka.actor.{ActorSystem, TypedActor}
+import java.util.concurrent.TimeUnit
+
+import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.{CircuitBreaker, CircuitBreakerOpenException}
 import akka.stream.Materializer
-import com.github.freeacs.entities._
-import com.github.freeacs.marshaller.Marshallers
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.SessionActor
+import com.github.freeacs.xml._
+import com.github.freeacs.xml.marshaller.Marshallers
+import akka.pattern.ask
+import akka.util.Timeout
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
@@ -19,11 +23,9 @@ class Tr069Routes(cb: CircuitBreaker, services: Tr069Services, sessionLookupTime
                  (implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
   extends Directives with Marshallers {
 
-  val REALM = "FreeACS"
-
   def routes: Route =
     logRequestResult("tr069") {
-      authenticateBasicAsync(REALM, services.authService.authenticator) { user =>
+      authenticateBasicAsync("FreeACS", services.authService.authenticator) { user =>
         (post & entity(as[SOAPRequest])) { soapRequest =>
           path("tr069") {
             handle(soapRequest, user)
@@ -33,9 +35,10 @@ class Tr069Routes(cb: CircuitBreaker, services: Tr069Services, sessionLookupTime
     }
 
   def handle(soapRequest: SOAPRequest, user: String): Route = {
-    val withBreaker = cb.withCircuitBreaker(
-      getSessionActor(user).flatMap(userActor =>
-        userActor.request(soapRequest)))
+    implicit val timeout: Timeout = Timeout(1, TimeUnit.SECONDS)
+    val withBreaker = cb.withCircuitBreaker(getSessionActor(user)
+      .flatMap(_ ? soapRequest))
+      .map(_.asInstanceOf[Option[SOAPResponse]])
     onComplete(withBreaker) {
       case Success(Some(inform: InformResponse)) =>
         complete(inform)
@@ -43,19 +46,19 @@ class Tr069Routes(cb: CircuitBreaker, services: Tr069Services, sessionLookupTime
         complete(StatusCodes.OK)
       case Failure(_: CircuitBreakerOpenException) =>
         complete(HttpResponse(StatusCodes.TooManyRequests).withEntity("Server Busy"))
-      case Failure(_) =>
+      case Failure(e) =>
+        e.printStackTrace()
         complete(StatusCodes.InternalServerError)
     }
   }
 
-  def getSessionActor(user: String): Future[SessionActor] = {
+  def getSessionActor(user: String): Future[ActorRef] = {
     val actorName = s"session-$user"
     val actorProps = SessionActor.props(user, services)
     system.actorSelection(s"user/$actorName")
       .resolveOne(sessionLookupTimeout)
-      .map(actorRef => TypedActor(system).typedActorOf(actorProps, actorRef))
       .recover { case _: Exception =>
-        TypedActor(system).typedActorOf(actorProps, actorName)
+        system.actorOf(actorProps, actorName)
       }
   }
 

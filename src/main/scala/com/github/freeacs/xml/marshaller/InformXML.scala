@@ -1,6 +1,6 @@
-package com.github.freeacs.marshaller
+package com.github.freeacs.xml.marshaller
 
-import com.github.freeacs.entities._
+import com.github.freeacs.xml._
 import EnvelopeXML._
 import scala.xml.Elem
 

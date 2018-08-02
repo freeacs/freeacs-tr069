@@ -1,6 +1,6 @@
-package com.github.freeacs.marshaller
+package com.github.freeacs.xml.marshaller
 
-import com.github.freeacs.entities.{DeviceIdStruct, EventStruct, ParameterValueStruct}
+import com.github.freeacs.xml.{DeviceIdStruct, EventStruct, ParameterValueStruct}
 
 import scala.collection.immutable
 import scala.xml.Elem
