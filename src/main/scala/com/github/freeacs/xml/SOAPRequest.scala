@@ -8,4 +8,4 @@ final case class InformRequest(
   params: Seq[ParameterValueStruct]
 ) extends SOAPRequest
 
-object EmptyRequest extends SOAPRequest
+case object EmptyRequest extends SOAPRequest

@@ -42,6 +42,8 @@ class Tr069Routes(cb: CircuitBreaker, services: Tr069Services, sessionLookupTime
     onComplete(withBreaker) {
       case Success(Some(inform: InformResponse)) =>
         complete(inform)
+      case Success(Some(InvalidRequest)) =>
+        complete(HttpResponse(StatusCodes.BadRequest).withEntity("Invalid request"))
       case Success(None) =>
         complete(StatusCodes.OK)
       case Failure(_: CircuitBreakerOpenException) =>
