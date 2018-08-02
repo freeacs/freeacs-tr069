@@ -21,13 +21,13 @@ class SessionActor(user: String, services: Tr069Services)(implicit ec: Execution
   override def receive: Receive = {
     case request: SOAPRequest =>
       request match {
-        case inform: InformRequest =>
+        case _: InformRequest =>
           val response = Some(InformResponse())
           requests = List((request, response))
           pipe(Future.successful(response)) to sender
         case EmptyRequest =>
           requests = requests :+ (request, None)
-          log.info(requests.mkString(", "))
+          log.info(requests.map(tuple => (tuple._1.getClass.getSimpleName, tuple._2.map(_.getClass.getSimpleName))).mkString(", "))
           sender ! None
           self ! PoisonPill
       }
