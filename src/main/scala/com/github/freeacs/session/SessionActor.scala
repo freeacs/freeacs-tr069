@@ -3,6 +3,8 @@ package com.github.freeacs.session
 import akka.actor.{Actor, ActorLogging, FSM, PoisonPill, Props}
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.xml._
+import akka.pattern.pipe
+import com.github.freeacs.domain.UnitParameter
 
 import scala.concurrent.ExecutionContext
 
@@ -12,33 +14,51 @@ object SessionActor {
 }
 
 trait ConversationState
+case object WaitingForResponse extends ConversationState
 case object ExpectInform extends ConversationState
+case class GoTo(state: ConversationState, conversationData: ConversationData) extends ConversationState
 case object ExpectEmpty extends ConversationState
 case object Complete extends ConversationState
 case object Failed extends ConversationState
 
+case class ConversationData(history: List[(SOAPRequest, SOAPResponse)] = List(), params: Seq[UnitParameter] = Seq(), exception: Option[Throwable] = None)
+
 class SessionActor(user: String, services: Tr069Services)(implicit ec: ExecutionContext)
-  extends Actor with FSM[ConversationState, List[(SOAPRequest, Option[SOAPResponse])]] with ActorLogging  {
+  extends Actor with FSM[ConversationState, ConversationData] with ActorLogging  {
 
   log.info("Created session actor for " + user)
 
-
-  startWith(ExpectInform, List())
+  startWith(ExpectInform, ConversationData())
 
   when(ExpectInform) {
-    case Event(inform: InformRequest, conversationState) =>
-      val newConversationState = conversationState :+ (inform, Some(InformResponse()))
-      goto(ExpectEmpty) using(newConversationState) replying(Some(InformResponse()))
-    case _ =>
-      invalid
+    case Event(request: InformRequest, stateData) =>
+      val response = InformResponse()
+      val newConversationState = stateData.copy(history = stateData.history :+ (request, response))
+      services.getUnitParameters(user)
+        .map(params => newConversationState.copy(params = params)).recover {
+          case e =>
+            log.error(s"Failed to retrieve unit params {}", e)
+            newConversationState.copy(exception = Some(e))
+        }.map(state => if (state.exception.isEmpty) GoTo(ExpectEmpty, state) else GoTo(Failed, state)) pipeTo self
+      goto(WaitingForResponse) replying(response)
+    case Event(request, stateData) =>
+      log.error("Expecting inform but got {}. Data: {}", request, stateData)
+      goto(Failed) replying(InvalidRequest)
+  }
+
+  when(WaitingForResponse) {
+    case Event(GoTo(state, stateData), _) =>
+      goto(state) using(stateData)
   }
 
   when(ExpectEmpty) {
-    case Event(EmptyRequest, conversationState) =>
-      val newConversationState = conversationState :+ (EmptyRequest, None)
-      goto(Complete) using(newConversationState) replying(None)
-    case _ =>
-      invalid
+    case Event(EmptyRequest, stateData) =>
+      val response = EmptyResponse
+      val newConversationState = stateData.copy(history = stateData.history :+ (EmptyRequest, response))
+      goto(Complete) using(newConversationState) replying(response)
+    case Event(request, stateData) =>
+      log.error("Expecting empty request but got {}. Data: {}", request, stateData)
+      goto(Failed) replying(InvalidRequest)
   }
 
   when(Complete) {
@@ -50,11 +70,11 @@ class SessionActor(user: String, services: Tr069Services)(implicit ec: Execution
   }
 
   onTransition {
-    case _ -> Failed =>
-      log.error("Conversation failure occurred")
+    case state -> Failed =>
+      log.error("Conversation failure occurred from state {} with data {}", state, nextStateData)
       self ! PoisonPill
-    case _ -> Complete =>
-      log.info(s"Conversation completed ${stateData.map(mapToString).mkString(", ")}")
+    case state -> Complete =>
+      log.info(s"Conversation completed from state {} with data {}", state, nextStateData)
       self ! PoisonPill
   }
 
@@ -64,9 +84,4 @@ class SessionActor(user: String, services: Tr069Services)(implicit ec: Execution
       self ! PoisonPill
       stay
   }
-
-  def mapToString(tuple: (SOAPRequest, Option[SOAPResponse])): (String, Option[String]) =
-    (tuple._1.getClass.getSimpleName, tuple._2.map(_.getClass.getSimpleName))
-
-  def invalid = goto(Failed) replying(Some(InvalidRequest))
 }

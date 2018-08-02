@@ -38,13 +38,13 @@ class Tr069Routes(cb: CircuitBreaker, services: Tr069Services, sessionLookupTime
     implicit val timeout: Timeout = Timeout(1, TimeUnit.SECONDS)
     val withBreaker = cb.withCircuitBreaker(getSessionActor(user)
       .flatMap(_ ? soapRequest))
-      .map(_.asInstanceOf[Option[SOAPResponse]])
+      .map(_.asInstanceOf[SOAPResponse])
     onComplete(withBreaker) {
-      case Success(Some(inform: InformResponse)) =>
+      case Success(inform: InformResponse) =>
         complete(inform)
-      case Success(Some(InvalidRequest)) =>
+      case Success(InvalidRequest) =>
         complete(HttpResponse(StatusCodes.BadRequest).withEntity("Invalid request"))
-      case Success(None) =>
+      case Success(EmptyResponse) =>
         complete(StatusCodes.OK)
       case Failure(_: CircuitBreakerOpenException) =>
         complete(HttpResponse(StatusCodes.TooManyRequests).withEntity("Server Busy"))
