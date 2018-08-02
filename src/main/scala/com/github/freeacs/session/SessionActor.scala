@@ -1,9 +1,9 @@
 package com.github.freeacs.session
 
-import akka.actor.{Actor, ActorLogging, ActorSystem, PoisonPill, Props, TypedActor}
+import akka.actor.{Actor, ActorLogging, PoisonPill, Props}
+import akka.pattern.pipe
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.xml._
-import akka.pattern.pipe
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
