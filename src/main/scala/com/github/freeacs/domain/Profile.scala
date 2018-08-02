@@ -1,5 +1,3 @@
 package com.github.freeacs.domain
 
-class Profile {
-
-}
+case class Profile(profileId: Option[Long], profileName: String, unitType: Long)

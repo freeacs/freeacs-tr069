@@ -1,5 +1,3 @@
 package com.github.freeacs.domain
 
-class UnitType {
-
-}
+case class UnitType(unitTypeId: Option[Long], unitTypeName: String)

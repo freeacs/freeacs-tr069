@@ -1,5 +1,3 @@
 package com.github.freeacs.domain
 
-class Unit {
-
-}
+case class Unit(unitId: String, unitType: UnitType, profile: Profile)
