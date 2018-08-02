@@ -22,17 +22,15 @@ class Tr069Services(dbConfig: DatabaseConfig[JdbcProfile])(implicit ec: Executio
 
   def getUnitParameters(unitId: String): Future[Seq[UnitParameter]] =
     unitParameterRepository.getUnitParameters(unitId).map(list => {
-      list.map(tuple => {
-        val up = tuple._1
-        val utp = tuple._2
-        UnitParameter(up.unitId,
+      list.map(tuple =>
+        UnitParameter(tuple._1.unitId,
           UnitTypeParameter(
-            utp.unitTypeParameterId,
-            utp.unitTypeId,
-            utp.name,
-            utp.flags
-          ), up.value)
-      })
+            tuple._2.unitTypeParameterId,
+            tuple._2.unitTypeId,
+            tuple._2.name,
+            tuple._2.flags
+          ), tuple._1.value)
+      )
     })
 
   val authService = new AuthenticationService(this)
