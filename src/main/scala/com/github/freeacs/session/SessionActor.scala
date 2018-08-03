@@ -24,7 +24,7 @@ case object ExpectEmptyRequest extends ConversationState
 case object ExpectGetParameterNamesResponse extends ConversationState
 case object ExpectGetParameterValuesResponse extends ConversationState
 case object ExpectSetParameterValuesResponse extends ConversationState
-case object ExpectRebootReponse extends ConversationState
+case object ExpectRebootResponse extends ConversationState
 case object Complete extends ConversationState
 case object Failed extends ConversationState
 
