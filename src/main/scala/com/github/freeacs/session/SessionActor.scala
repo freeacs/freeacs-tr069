@@ -14,13 +14,17 @@ object SessionActor {
 }
 
 trait ConversationState
-case object WaitingForResponse extends ConversationState
-case object ExpectInform extends ConversationState
 case class GoTo(
   state: ConversationState,
   data: ConversationData
 ) extends ConversationState
-case object ExpectEmpty extends ConversationState
+case object WaitingForGoTo extends ConversationState
+case object ExpectInformRequest extends ConversationState
+case object ExpectEmptyRequest extends ConversationState
+case object ExpectGetParameterNamesResponse extends ConversationState
+case object ExpectGetParameterValuesResponse extends ConversationState
+case object ExpectSetParameterValuesResponse extends ConversationState
+case object ExpectRebootReponse extends ConversationState
 case object Complete extends ConversationState
 case object Failed extends ConversationState
 
@@ -36,9 +40,9 @@ class SessionActor(user: String, services: Tr069Services)(implicit ec: Execution
 
   log.info("Created session actor for " + user)
 
-  startWith(ExpectInform, ConversationData())
+  startWith(ExpectInformRequest, ConversationData())
 
-  when(ExpectInform) {
+  when(ExpectInformRequest) {
     case Event(request: InformRequest, stateData) =>
       val response = InformResponse()
       val newConversationState = stateData.copy(history = stateData.history :+ (request, response))
@@ -57,22 +61,22 @@ class SessionActor(user: String, services: Tr069Services)(implicit ec: Execution
           newConversationState.copy(exception = Some(e))
       }.map(state =>
         if (state.exception.isEmpty)
-          GoTo(ExpectEmpty, state)
+          GoTo(ExpectEmptyRequest, state)
         else
           GoTo(Failed, state)
       ) pipeTo self
-      goto(WaitingForResponse) replying (response)
+      goto(WaitingForGoTo) replying (response)
     case Event(request, stateData) =>
       log.error("Expecting inform but got {}. Data: {}", request, stateData)
       goto(Failed) replying (InvalidRequest)
   }
 
-  when(WaitingForResponse) {
+  when(WaitingForGoTo) {
     case Event(GoTo(state, stateData), _) =>
       goto(state) using (stateData)
   }
 
-  when(ExpectEmpty) {
+  when(ExpectEmptyRequest) {
     case Event(EmptyRequest, stateData) =>
       val response = EmptyResponse
       val newConversationState = stateData.copy(history = stateData.history :+ (EmptyRequest, response))
