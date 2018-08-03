@@ -18,7 +18,7 @@ case class GoTo(
   state: ConversationState,
   data: ConversationData
 ) extends ConversationState
-case object WaitingForGoTo extends ConversationState
+case object ExpectGoTo extends ConversationState
 case object ExpectInformRequest extends ConversationState
 case object ExpectEmptyRequest extends ConversationState
 case object ExpectGetParameterNamesResponse extends ConversationState
@@ -65,13 +65,13 @@ class SessionActor(user: String, services: Tr069Services)(implicit ec: Execution
         else
           GoTo(Failed, state)
       ) pipeTo self
-      goto(WaitingForGoTo) replying (response)
+      goto(ExpectGoTo) replying (response)
     case Event(request, stateData) =>
       log.error("Expecting inform but got {}. Data: {}", request, stateData)
       goto(Failed) replying (InvalidRequest)
   }
 
-  when(WaitingForGoTo) {
+  when(ExpectGoTo) {
     case Event(GoTo(state, stateData), _) =>
       goto(state) using (stateData)
   }
