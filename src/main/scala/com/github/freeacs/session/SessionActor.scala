@@ -16,12 +16,20 @@ object SessionActor {
 trait ConversationState
 case object WaitingForResponse extends ConversationState
 case object ExpectInform extends ConversationState
-case class GoTo(state: ConversationState, conversationData: ConversationData) extends ConversationState
+case class GoTo(
+  state: ConversationState,
+  data: ConversationData
+) extends ConversationState
 case object ExpectEmpty extends ConversationState
 case object Complete extends ConversationState
 case object Failed extends ConversationState
 
-case class ConversationData(history: List[(SOAPRequest, SOAPResponse)] = List(), unit: Option[domain.Unit] = None, exception: Option[Throwable] = None)
+case class ConversationData(
+  startTimestamp: Long = System.currentTimeMillis(),
+  history: List[(SOAPRequest, SOAPResponse)] = List(),
+  unit: Option[domain.Unit] = None,
+  exception: Option[Throwable] = None
+)
 
 class SessionActor(user: String, services: Tr069Services)(implicit ec: ExecutionContext)
   extends Actor with FSM[ConversationState, ConversationData] with ActorLogging {
@@ -97,4 +105,6 @@ class SessionActor(user: String, services: Tr069Services)(implicit ec: Execution
       self ! PoisonPill
       stay
   }
+
+  initialize()
 }
