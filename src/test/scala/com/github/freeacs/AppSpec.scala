@@ -1,13 +1,26 @@
 package com.github.freeacs
 
-import org.scalatest._
-import org.scalatest.concurrent._
+import java.util.concurrent.TimeUnit
 
-class AppSpec extends FlatSpec with Matchers with ScalaFutures with BeforeAndAfterAll {
-  "The app" should "return index.html on a GET to /" in {
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.pattern.CircuitBreaker
+import com.github.freeacs.routes.Tr069Routes
+import org.scalatest.{Matchers, WordSpec}
 
-  }
-  "The app" should "return 404 on a GET to /foo" in {
+import scala.concurrent.duration.FiniteDuration
 
+class AppSpec extends WordSpec with Matchers with ScalatestRouteTest {
+  val authenticationService = new DummyAuthenticationService()
+  val breaker = new CircuitBreaker(system.scheduler, 1,  FiniteDuration(1, TimeUnit.SECONDS),  FiniteDuration(1, TimeUnit.SECONDS))
+  val sessionLookupTimeout = FiniteDuration(1, TimeUnit.SECONDS)
+  val routes = new Tr069Routes(breaker ,null, authenticationService, sessionLookupTimeout).routes
+
+  "The session actor" should {
+    "return Invalid request on a POST to /tr069 without any body" in {
+      // tests:
+      Post("/tr069") ~> routes ~> check {
+        responseAs[String] shouldEqual "Invalid request"
+      }
+    }
   }
 }
