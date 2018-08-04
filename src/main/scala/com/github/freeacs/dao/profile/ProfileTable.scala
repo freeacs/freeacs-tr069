@@ -1,9 +1,9 @@
-package com.github.freeacs.repository.profile
+package com.github.freeacs.dao.profile
 
-import com.github.freeacs.repository.Database
-import com.github.freeacs.repository.unitType.UnitTypeTable
+import com.github.freeacs.dao.Dao
+import com.github.freeacs.dao.unitType.UnitTypeTable
 
-trait ProfileTable extends UnitTypeTable { this: Database =>
+trait ProfileTable extends UnitTypeTable { this: Dao =>
   import config.profile.api._
 
   class Profiles(tag: Tag) extends Table[Profile](tag, "PROFILE") {

@@ -1,4 +1,4 @@
-package com.github.freeacs.repository.profile
+package com.github.freeacs.dao.profile
 
 final case class ProfileParameter(
   profileId: Long,

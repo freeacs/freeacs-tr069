@@ -1,13 +1,13 @@
-package com.github.freeacs.repository.profile
+package com.github.freeacs.dao.profile
 
-import com.github.freeacs.repository.Database
+import com.github.freeacs.dao.Dao
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class ProfileRepository(val config: DatabaseConfig[JdbcProfile])(implicit ec: ExecutionContext)
-  extends Database with ProfileTable {
+class ProfileDao(val config: DatabaseConfig[JdbcProfile])(implicit ec: ExecutionContext)
+  extends Dao with ProfileTable {
 
   import config.profile.api._
 

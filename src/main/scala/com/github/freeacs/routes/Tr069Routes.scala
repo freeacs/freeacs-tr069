@@ -9,7 +9,7 @@ import akka.pattern.{CircuitBreaker, CircuitBreakerOpenException, ask}
 import akka.stream.Materializer
 import akka.util.Timeout
 import com.github.freeacs.services.{AuthenticationService, Tr069Services}
-import com.github.freeacs.session.SessionActor
+import com.github.freeacs.actors.ConversationActor
 import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers
 
@@ -36,9 +36,9 @@ class Tr069Routes(breaker: CircuitBreaker, services: Tr069Services, authService:
     }
 
   def handle(soapRequest: SOAPRequest, user: String): Route = {
-    val withBreaker = breaker.withCircuitBreaker(getSessionActor(user)
-      .flatMap(_ ? soapRequest))
-      .map(_.asInstanceOf[SOAPResponse])
+    val withBreaker = breaker.withCircuitBreaker(
+      getConversationActor(user).flatMap(_ ? soapRequest)
+    ).map(_.asInstanceOf[SOAPResponse])
     onComplete(withBreaker) {
       case Success(inform: InformResponse) =>
         complete(inform)
@@ -54,9 +54,9 @@ class Tr069Routes(breaker: CircuitBreaker, services: Tr069Services, authService:
     }
   }
 
-  def getSessionActor(user: String): Future[ActorRef] = {
-    val actorName = s"session-$user"
-    val actorProps = SessionActor.props(user, services)
+  def getConversationActor(user: String): Future[ActorRef] = {
+    val actorName = s"conversation-$user"
+    val actorProps = ConversationActor.props(user, services)
     system.actorSelection(s"user/$actorName")
       .resolveOne(sessionLookupTimeout)
       .recover { case _: Exception =>

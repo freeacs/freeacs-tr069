@@ -1,10 +1,10 @@
-package com.github.freeacs.repository.unit
+package com.github.freeacs.dao.unit
 
-import com.github.freeacs.repository.Database
-import com.github.freeacs.repository.profile.ProfileParameterTable
-import com.github.freeacs.repository.unitType.UnitTypeTable
+import com.github.freeacs.dao.Dao
+import com.github.freeacs.dao.profile.ProfileParameterTable
+import com.github.freeacs.dao.unitType.UnitTypeTable
 
-trait UnitTable extends UnitTypeTable with ProfileParameterTable { this: Database =>
+trait UnitTable extends UnitTypeTable with ProfileParameterTable { this: Dao =>
   import config.profile.api._
 
   class Units(tag: Tag) extends Table[Unit](tag, "UNIT") {

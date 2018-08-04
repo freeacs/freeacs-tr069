@@ -1,37 +1,18 @@
-package com.github.freeacs.session
+package com.github.freeacs.actors
 
 import akka.actor.{Actor, ActorLogging, FSM, PoisonPill, Props}
+import akka.pattern.pipe
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.xml._
-import akka.pattern.pipe
-import com.github.freeacs.domain
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object SessionActor {
+object ConversationActor {
   def props(user: String, services: Tr069Services)(implicit ec: ExecutionContext): Props =
-    Props(new SessionActor(user, services))
+    Props(new ConversationActor(user, services))
 }
 
-trait ConversationState
-case object WaitingForResponse extends ConversationState
-case object ExpectInform extends ConversationState
-case class GoTo(
-  state: ConversationState,
-  data: ConversationData
-) extends ConversationState
-case object ExpectEmpty extends ConversationState
-case object Complete extends ConversationState
-case object Failed extends ConversationState
-
-case class ConversationData(
-  startTimestamp: Long = System.currentTimeMillis(),
-  history: List[(SOAPRequest, SOAPResponse)] = List(),
-  unit: Option[domain.Unit] = None,
-  exception: Option[Throwable] = None
-)
-
-class SessionActor(user: String, services: Tr069Services)(implicit ec: ExecutionContext)
+class ConversationActor(user: String, services: Tr069Services)(implicit ec: ExecutionContext)
   extends Actor with FSM[ConversationState, ConversationData] with ActorLogging {
 
   log.info("Created session actor for " + user)

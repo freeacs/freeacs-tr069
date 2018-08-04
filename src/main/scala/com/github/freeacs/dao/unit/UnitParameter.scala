@@ -1,4 +1,4 @@
-package com.github.freeacs.repository.unit
+package com.github.freeacs.dao.unit
 
 final case class UnitParameter(
   unitId: String,

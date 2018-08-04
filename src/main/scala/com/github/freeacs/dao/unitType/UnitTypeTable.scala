@@ -1,8 +1,8 @@
-package com.github.freeacs.repository.unitType
+package com.github.freeacs.dao.unitType
 
-import com.github.freeacs.repository.Database
+import com.github.freeacs.dao.Dao
 
-trait UnitTypeTable { this: Database =>
+trait UnitTypeTable { this: Dao =>
   import config.profile.api._
 
   class UnitTypes(tag: Tag) extends Table[UnitType](tag, "UNIT_TYPE") {

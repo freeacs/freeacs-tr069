@@ -1,15 +1,15 @@
-package com.github.freeacs.repository.unit
+package com.github.freeacs.dao.unit
 
 import com.github.freeacs.config.SystemParameters
-import com.github.freeacs.repository.Database
-import com.github.freeacs.repository.unitType.UnitTypeParameter
+import com.github.freeacs.dao.Dao
+import com.github.freeacs.dao.unitType.UnitTypeParameter
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class UnitParameterRepository(val config: DatabaseConfig[JdbcProfile])(implicit ec: ExecutionContext)
-  extends Database with UnitParameterTable {
+class UnitParameterDao(val config: DatabaseConfig[JdbcProfile])(implicit ec: ExecutionContext)
+  extends Dao with UnitParameterTable {
 
   import config.profile.api._
 

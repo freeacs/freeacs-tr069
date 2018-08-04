@@ -19,7 +19,11 @@ trait Configuration {
 
 }
 
-class ConfigurationImpl(config: Config) extends Configuration {
+object Configuration {
+  def from(config: Config): Configuration = new ConfigurationImpl(config)
+}
+
+private class ConfigurationImpl(config: Config) extends Configuration {
 
   val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db", config)
   private val serverConfig = config.getConfig("server")
