@@ -38,7 +38,7 @@ class ConversationActor(user: String, services: Tr069Services)(implicit ec: Exec
           newConversationState.copy(exception = Some(e))
       }.map(state =>
         if (state.exception.isEmpty)
-          GoTo(ExpectInformRequest, state)
+          GoTo(ExpectEmptyRequest, state)
         else
           GoTo(Failed, state)
       ) pipeTo self
