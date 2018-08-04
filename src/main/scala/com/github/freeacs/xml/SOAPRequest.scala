@@ -9,3 +9,5 @@ final case class InformRequest(
 ) extends SOAPRequest
 
 case object EmptyRequest extends SOAPRequest
+
+case class GetParameterNamesResponse(params: Seq[(String, String)]) extends SOAPRequest

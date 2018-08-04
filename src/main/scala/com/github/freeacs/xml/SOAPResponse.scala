@@ -7,3 +7,5 @@ final case class InformResponse(maxEnvelopes: Int = 1) extends SOAPResponse
 case object InvalidRequest extends SOAPResponse
 
 case object EmptyResponse extends SOAPResponse
+
+final case class GetParameterNamesRequest(params: Seq[String]) extends SOAPResponse

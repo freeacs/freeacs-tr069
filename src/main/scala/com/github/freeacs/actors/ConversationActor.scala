@@ -55,12 +55,15 @@ class ConversationActor(user: String, services: Tr069Services)(implicit ec: Exec
 
   when(ExpectEmptyRequest) {
     case Event(EmptyRequest, stateData) =>
-      val response = EmptyResponse
+      val response = GetParameterNamesRequest(Seq("InternetGatewayDevice."))
       val newConversationState = stateData.copy(history = stateData.history :+ (EmptyRequest, response))
-      goto(Complete) using (newConversationState) replying (response)
-    case Event(request, stateData) =>
-      log.error("Expecting empty request but got {}. Data: {}", request, stateData)
-      goto(Failed) replying (InvalidRequest)
+      goto(ExpectGetParameterNamesResponse) using (newConversationState) replying (response)
+  }
+
+  when(ExpectGetParameterNamesResponse) {
+    case Event(res: GetParameterNamesResponse, stateData) =>
+      val newConversationState = stateData.copy(history = stateData.history :+ (res, EmptyResponse))
+      goto(Complete) using(newConversationState) replying(EmptyResponse)
   }
 
   when(Complete) {
