@@ -17,9 +17,9 @@ class ConversationActor(user: String, services: Tr069Services)(implicit ec: Exec
 
   log.info("Created session actor for " + user)
 
-  startWith(ExpectInform, ConversationData())
+  startWith(ExpectInformRequest, ConversationData())
 
-  when(ExpectInform) {
+  when(ExpectInformRequest) {
     case Event(request: InformRequest, stateData) =>
       val response = InformResponse()
       val newConversationState = stateData.copy(history = stateData.history :+ (request, response))
@@ -38,22 +38,22 @@ class ConversationActor(user: String, services: Tr069Services)(implicit ec: Exec
           newConversationState.copy(exception = Some(e))
       }.map(state =>
         if (state.exception.isEmpty)
-          GoTo(ExpectEmpty, state)
+          GoTo(ExpectInformRequest, state)
         else
           GoTo(Failed, state)
       ) pipeTo self
-      goto(WaitingForResponse) replying (response)
+      goto(ExpectGoTo) replying (response)
     case Event(request, stateData) =>
       log.error("Expecting inform but got {}. Data: {}", request, stateData)
       goto(Failed) replying (InvalidRequest)
   }
 
-  when(WaitingForResponse) {
+  when(ExpectGoTo) {
     case Event(GoTo(state, stateData), _) =>
       goto(state) using (stateData)
   }
 
-  when(ExpectEmpty) {
+  when(ExpectEmptyRequest) {
     case Event(EmptyRequest, stateData) =>
       val response = EmptyResponse
       val newConversationState = stateData.copy(history = stateData.history :+ (EmptyRequest, response))
