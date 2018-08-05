@@ -46,6 +46,8 @@ class Tr069Routes(breaker: CircuitBreaker, services: Tr069Services, authService:
         complete(gpn)
       case Success(gpv: GetParameterValuesRequest) =>
         complete(gpv)
+      case Success(spv: SetParameterValuesRequest) =>
+        complete(spv)
       case Success(InvalidRequest) =>
         complete(HttpResponse(StatusCodes.BadRequest).withEntity("Invalid request"))
       case Success(EmptyResponse) =>

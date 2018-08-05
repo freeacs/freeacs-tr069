@@ -4,9 +4,9 @@ import com.github.freeacs.xml.{GetParameterNamesRequest, GetParameterNamesRespon
 
 import scala.xml.{Elem, NodeSeq}
 
-object GetParameterNamesXml {
+object GetParameterNamesXml extends XmlMarshaller[GetParameterNamesResponse, GetParameterNamesRequest] {
 
-  def marshal(gpn: GetParameterNamesRequest): NodeSeq =
+  def marshal(gpn: GetParameterNamesRequest): Elem =
     <soap:Envelope
     xmlns:xsd="http://www.w3.org/2001/XMLSchema"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

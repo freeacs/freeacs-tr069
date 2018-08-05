@@ -4,7 +4,8 @@ import com.github.freeacs.xml._
 import EnvelopeXML._
 import scala.xml.Elem
 
-object InformXML {
+object InformXML extends XmlMarshaller[InformRequest, InformResponse] {
+
   def marshal(informResponse: InformResponse): Elem =
     withEnvelope(
       <cwmp:InformResponse>
@@ -18,4 +19,5 @@ object InformXML {
       parseEventStructs(xml),
       parseParameterValueStructs(xml)
     )
+
 }
