@@ -15,18 +15,16 @@ import scala.xml.{Elem, NodeSeq, XML}
 
 trait Marshallers extends ScalaXmlSupport {
 
-  implicit def soapResponseXmlFormat: Marshaller[SOAPResponse, Option[NodeSeq]] =
-    Marshaller.opaque[SOAPResponse, Option[NodeSeq]] {
+  implicit def soapResponseXmlFormat: Marshaller[SOAPResponse, NodeSeq] =
+    Marshaller.opaque[SOAPResponse, NodeSeq] {
       case inform: InformResponse =>
-        Some(InformXML.marshal(inform))
+        InformXML.marshal(inform)
       case gpn: GetParameterNamesRequest =>
-        Some(GetParameterNamesXml.marshal(gpn))
+        GetParameterNamesXml.marshal(gpn)
       case gpv: GetParameterValuesRequest =>
-        Some(GetParameterValuesXml.marshal(gpv))
+        GetParameterValuesXml.marshal(gpv)
       case spv: SetParameterValuesRequest =>
-        Some(SetParameterValuesXml.marshal(spv))
-      case EmptyResponse | InvalidRequest =>
-        None
+        SetParameterValuesXml.marshal(spv)
     }
 
   implicit def soapResponseXmlMarshaller(implicit ec: ExecutionContext): ToResponseMarshaller[SOAPResponse] =
@@ -35,8 +33,7 @@ trait Marshallers extends ScalaXmlSupport {
         HttpResponse(entity =
           HttpEntity.CloseDelimited(
             ContentType.WithCharset(MediaTypes.`text/xml`, HttpCharsets.`UTF-8`),
-            Source.fromFuture(Marshal(response).to[Option[NodeSeq]])
-              .filter(_.isDefined)
+            Source.fromFuture(Marshal(response).to[NodeSeq])
               .map(ns => ByteString(ns.toString))
           ))
       }
@@ -59,7 +56,7 @@ trait Marshallers extends ScalaXmlSupport {
         GetParameterNamesXml.unMarshal(xml)
       case SOAPMethod.GetParameterValuesResponse =>
         GetParameterValuesXml.unMarshal(xml)
-      case SOAPMethod.SetParameterValues =>
+      case SOAPMethod.SetParameterValuesResponse =>
         SetParameterValuesXml.unMarshal(xml)
       case SOAPMethod.Empty =>
         EmptyRequest

@@ -17,5 +17,6 @@ object SetParameterValuesXml extends XmlMarshaller[SetParameterValuesResponse, S
       </cwmp:SetParameterValues>
     )
 
-  def unMarshal(xml: Elem): SetParameterValuesResponse = ???
+  def unMarshal(xml: Elem): SetParameterValuesResponse =
+    SetParameterValuesResponse((xml \\ "Status").text.toInt)
 }

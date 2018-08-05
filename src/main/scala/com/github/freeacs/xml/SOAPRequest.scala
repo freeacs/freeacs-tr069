@@ -14,4 +14,4 @@ case class GetParameterNamesResponse(params: Seq[(String, Boolean)]) extends SOA
 
 case class GetParameterValuesResponse(params: Seq[(String, String)]) extends SOAPRequest
 
-case class SetParameterValuesResponse() extends SOAPRequest
+case class SetParameterValuesResponse(status: Int) extends SOAPRequest

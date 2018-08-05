@@ -42,6 +42,7 @@ class ConversationActor(user: String, services: Tr069Services)(implicit ec: Exec
         else
           GoTo(Failed, state)
       ) pipeTo self
+      log.info("Got Inform. Returning InformResponse")
       goto(ExpectGoTo) replying (response)
     case Event(request, stateData) =>
       log.error("Expecting inform but got {}. Data: {}", request, stateData)
@@ -50,20 +51,32 @@ class ConversationActor(user: String, services: Tr069Services)(implicit ec: Exec
 
   when(ExpectGoTo) {
     case Event(GoTo(state, stateData), _) =>
+      log.info(s"Jumping to $state")
       goto(state) using (stateData)
   }
 
   when(ExpectEmptyRequest) {
     case Event(EmptyRequest, stateData) =>
+      log.info("Got EmptyRequest. Returning GetParameterNamesRequest")
       val response = GetParameterNamesRequest("InternetGatewayDevice.")
       val newConversationState = stateData.copy(history = stateData.history :+ (EmptyRequest, response))
       goto(ExpectGetParameterNamesResponse) using (newConversationState) replying (response)
   }
 
   when(ExpectGetParameterNamesResponse) {
-    case Event(res: GetParameterNamesResponse, stateData) =>
-      val newConversationState = stateData.copy(history = stateData.history :+ (res, EmptyResponse))
-      goto(Complete) using(newConversationState) replying(EmptyResponse)
+    case Event(req: GetParameterNamesResponse, stateData) =>
+      log.info("Got GetParameterNamesResponse. Returning SetParameterValuesRequest")
+      val response = SetParameterValuesRequest()
+      val newConversationState = stateData.copy(history = stateData.history :+ (req, response))
+      goto(ExpectSetParameterValuesResponse) using(newConversationState) replying response
+  }
+
+  when(ExpectSetParameterValuesResponse) {
+    case Event(req: SetParameterValuesResponse, stateData) =>
+      log.info("Got SetParameterValuesResponse. Returning EmptyResponse")
+      val response = EmptyResponse
+      val newConversationState = stateData.copy(history = stateData.history :+ (req, response))
+      goto(Complete) using(newConversationState) replying response
   }
 
   when(Complete) {
