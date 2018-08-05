@@ -21,6 +21,8 @@ trait Marshallers extends ScalaXmlSupport {
         InformXML.marshal(inform)
       case gpn: GetParameterNamesRequest =>
         GetParameterNamesXml.marshal(gpn)
+      case gpv: GetParameterValuesRequest =>
+        GetParameterValuesXml.marshal(gpv)
     }
 
   implicit def soapResponseXmlMarshaller(implicit ec: ExecutionContext): ToResponseMarshaller[SOAPResponse] =
@@ -50,6 +52,8 @@ trait Marshallers extends ScalaXmlSupport {
         InformXML.unMarshal(xml)
       case SOAPMethod.GetParameterNamesResponse =>
         GetParameterNamesXml.unMarshal(xml)
+      case SOAPMethod.GetParameterValuesResponse =>
+        GetParameterValuesXml.unMarshal(xml)
       case _ =>
         EmptyRequest
     }
