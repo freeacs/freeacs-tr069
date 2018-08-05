@@ -13,3 +13,5 @@ case object EmptyRequest extends SOAPRequest
 case class GetParameterNamesResponse(params: Seq[(String, Boolean)]) extends SOAPRequest
 
 case class GetParameterValuesResponse(params: Seq[(String, String)]) extends SOAPRequest
+
+case class SetParameterValuesResponse() extends SOAPRequest
