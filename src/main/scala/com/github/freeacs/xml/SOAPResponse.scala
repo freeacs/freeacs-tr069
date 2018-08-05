@@ -8,4 +8,4 @@ case object InvalidRequest extends SOAPResponse
 
 case object EmptyResponse extends SOAPResponse
 
-final case class GetParameterNamesRequest(params: Seq[String]) extends SOAPResponse
+final case class GetParameterNamesRequest(param: String) extends SOAPResponse

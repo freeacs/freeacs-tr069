@@ -55,7 +55,7 @@ class ConversationActor(user: String, services: Tr069Services)(implicit ec: Exec
 
   when(ExpectEmptyRequest) {
     case Event(EmptyRequest, stateData) =>
-      val response = GetParameterNamesRequest(Seq("InternetGatewayDevice."))
+      val response = GetParameterNamesRequest("InternetGatewayDevice.")
       val newConversationState = stateData.copy(history = stateData.history :+ (EmptyRequest, response))
       goto(ExpectGetParameterNamesResponse) using (newConversationState) replying (response)
   }

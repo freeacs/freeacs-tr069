@@ -15,10 +15,12 @@ import scala.xml.{Elem, NodeSeq, XML}
 
 trait Marshallers extends ScalaXmlSupport {
 
-  implicit def soapResponseXmlFormat =
+  implicit def soapResponseXmlFormat: Marshaller[SOAPResponse, NodeSeq] =
     Marshaller.opaque[SOAPResponse, NodeSeq] {
       case inform: InformResponse =>
         InformXML.marshal(inform)
+      case gpn: GetParameterNamesRequest =>
+        GetParameterNamesXml.marshal(gpn)
     }
 
   implicit def soapResponseXmlMarshaller(implicit ec: ExecutionContext): ToResponseMarshaller[SOAPResponse] =
@@ -46,7 +48,9 @@ trait Marshallers extends ScalaXmlSupport {
     parseMethod(xml) match {
       case SOAPMethod.Inform =>
         InformXML.unMarshal(xml)
-      case unknown =>
+      case SOAPMethod.GetParameterNamesResponse =>
+        GetParameterNamesXml.unMarshal(xml)
+      case _ =>
         EmptyRequest
     }
 
