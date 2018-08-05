@@ -28,7 +28,9 @@ object GetParameterNamesXml {
   def unMarshal(xml: Elem): GetParameterNamesResponse =
     GetParameterNamesResponse(
       (xml \\ "ParameterInfoStruct").seq.map(struct => {
-        ((struct \\ "Name").text, (struct \\ "Writable").text.toBoolean)
+        val name = (struct \\ "Name").text
+        val writableStr = (struct \\ "Writable").text
+        (name, writableStr != "0")
       })
     )
 }
