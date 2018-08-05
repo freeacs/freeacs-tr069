@@ -5,9 +5,14 @@ version := "0.1"
 scalaVersion := "2.12.6"
 
 enablePlugins(JavaAppPackaging)
+enablePlugins(ScalaxbPlugin)
 
-val akkaHttpV = "10.1.3"
-val akkaV = "2.5.14"
+lazy val akkaHttpV = "10.1.3"
+lazy val akkaV = "2.5.14"
+
+scalaxbPackageName in (Compile, scalaxb) := "generated"
+scalaxbAutoPackages in (Compile, scalaxb) := true
+scalaxbDispatchVersion in (Compile, scalaxb) := "0.13.4"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaV,
