@@ -100,7 +100,7 @@ class ConversationActor(user: String, services: Tr069Services)(implicit ec: Exec
     case Event(e, s) ⇒
       log.warning("received unhandled request {} in state {}/{}", e, stateName, s)
       self ! PoisonPill
-      stay
+      stay replying(InvalidRequest)
   }
 
   initialize()

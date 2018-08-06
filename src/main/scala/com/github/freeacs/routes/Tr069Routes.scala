@@ -40,18 +40,8 @@ class Tr069Routes(breaker: CircuitBreaker, services: Tr069Services, authService:
       getConversationActor(user).flatMap(_ ? soapRequest)
     ).map(_.asInstanceOf[SOAPResponse])
     onComplete(withBreaker) {
-      case Success(inform: InformResponse) =>
-        complete(inform)
-      case Success(gpn: GetParameterNamesRequest) =>
-        complete(gpn)
-      case Success(gpv: GetParameterValuesRequest) =>
-        complete(gpv)
-      case Success(spv: SetParameterValuesRequest) =>
-        complete(spv)
-      case Success(InvalidRequest) =>
-        complete(HttpResponse(StatusCodes.BadRequest).withEntity("Invalid request"))
-      case Success(EmptyResponse) =>
-        complete(StatusCodes.OK)
+      case Success(response: SOAPResponse) =>
+        complete(response)
       case Failure(_: CircuitBreakerOpenException) =>
         complete(HttpResponse(StatusCodes.TooManyRequests).withEntity("Server Busy"))
       case Failure(e) =>
