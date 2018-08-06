@@ -1,6 +1,4 @@
-package com.github.freeacs.routes
-
-import java.util.concurrent.TimeUnit
+package com.github.freeacs
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshalling.Marshal
@@ -21,7 +19,7 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
 
-class Tr069Routes(breaker: CircuitBreaker,
+class Routes(breaker: CircuitBreaker,
                   services: Tr069Services,
                   authService: AuthenticationService,
                   responseTimeout: FiniteDuration,

@@ -8,7 +8,6 @@ import akka.stream.Materializer
 import akka.util.ByteString
 import com.github.freeacs.xml._
 
-import scala.util.Try
 import scala.xml.{Elem, NodeSeq, XML}
 
 object Marshallers extends ScalaXmlSupport {
@@ -52,8 +51,8 @@ object Marshallers extends ScalaXmlSupport {
 
   def parseMethod(xml: Elem): SOAPMethod.Value =
     (xml \\ "Body").headOption.flatMap(_.child.collectFirst {
-      case el: Elem => Try(SOAPMethod.withName(el.label)).getOrElse(SOAPMethod.Empty)
-    }) getOrElse SOAPMethod.Empty
+      case el: Elem => SOAPMethod.values.find(_.toString == el.label)
+    }).flatten getOrElse SOAPMethod.Empty
 
   def decodeData(data: ByteString, charset: HttpCharset): String =
     if (charset == HttpCharsets.`UTF-8`)

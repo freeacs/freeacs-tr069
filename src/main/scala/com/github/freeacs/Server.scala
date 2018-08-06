@@ -5,7 +5,6 @@ import akka.http.scaladsl.Http
 import akka.pattern.CircuitBreaker
 import akka.stream.ActorMaterializer
 import com.github.freeacs.config.Configuration
-import com.github.freeacs.routes.Tr069Routes
 import com.github.freeacs.services.{AuthenticationService, Tr069Services}
 import com.typesafe.config.ConfigFactory
 
@@ -25,7 +24,7 @@ trait Server {
   val breaker = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
   val services = Tr069Services.from(dbConfig)
   val authService = AuthenticationService.from(services)
-  val routes = new Tr069Routes(breaker, services, authService, responseTimeout, actorTimeout)
+  val routes = new Routes(breaker, services, authService, responseTimeout, actorTimeout)
 
   val server = Http().bindAndHandle(routes.routes, hostname, port)
   StdIn.readLine()
