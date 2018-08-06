@@ -1,22 +1,20 @@
 package com.github.freeacs.xml.marshaller
 
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
-import akka.http.scaladsl.marshalling.{Marshal, Marshaller, ToResponseMarshaller}
+import akka.http.scaladsl.marshalling.Marshaller
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.stream.Materializer
-import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.github.freeacs.xml._
 
-import scala.concurrent.ExecutionContext
 import scala.util.Try
 import scala.xml.{Elem, NodeSeq, XML}
 
-trait Marshallers extends ScalaXmlSupport {
+object Marshallers extends ScalaXmlSupport {
 
-  implicit def soapResponseXmlFormat: Marshaller[SOAPResponse, Either[Option[String], NodeSeq]] =
-    Marshaller.opaque[SOAPResponse, Either[Option[String], NodeSeq]] {
+  implicit def soapResponseXmlFormat: Marshaller[SOAPResponse, Either[SOAPResponse, NodeSeq]] =
+    Marshaller.opaque[SOAPResponse, Either[SOAPResponse, NodeSeq]] {
       case inform: InformResponse =>
         Right(InformXML.marshal(inform))
       case gpn: GetParameterNamesRequest =>
@@ -25,28 +23,9 @@ trait Marshallers extends ScalaXmlSupport {
         Right(GetParameterValuesXml.marshal(gpv))
       case spv: SetParameterValuesRequest =>
         Right(SetParameterValuesXml.marshal(spv))
-      case InvalidRequest =>
-        Left(Some("Invalid request"))
-      case EmptyResponse =>
-        Left(None)
+      case response @ (InvalidRequest | EmptyResponse) =>
+        Left(response)
     }
-
-  implicit def soapResponseXmlMarshaller(implicit ec: ExecutionContext): ToResponseMarshaller[SOAPResponse] =
-    Marshaller.oneOf(
-      Marshaller.withOpenCharset(MediaTypes.`text/xml`) { (response, _) =>
-        HttpResponse(entity =
-          HttpEntity.CloseDelimited(
-            ContentType.WithCharset(MediaTypes.`text/xml`, HttpCharsets.`UTF-8`),
-            Source.fromFuture(Marshal(response).to[Either[Option[String], NodeSeq]])
-              .map {
-                case Right(elem) =>
-                  ByteString(elem.toString())
-                case Left(maybeString) =>
-                  maybeString.map(ByteString.apply).getOrElse(ByteString.empty)
-              }
-          ))
-      }
-    )
 
   implicit def soapRequestXmlUnmarshaller(implicit mat: Materializer): FromEntityUnmarshaller[SOAPRequest] =
     Unmarshaller.byteStringUnmarshaller
