@@ -10,7 +10,7 @@ import scala.language.postfixOps
 trait Configuration {
 
   val dbConfig: DatabaseConfig[JdbcProfile]
-  val sessionLookupTimeout: FiniteDuration
+  val timeout: FiniteDuration
   val maxFailures: Int
   val callTimeout: FiniteDuration
   val resetTimeout: FiniteDuration
@@ -27,7 +27,7 @@ private class ConfigurationImpl(config: Config) extends Configuration {
 
   val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db", config)
   private val serverConfig = config.getConfig("server")
-  val sessionLookupTimeout: FiniteDuration = serverConfig.getDuration("session.lookup.timeout").toMillis millis
+  val timeout: FiniteDuration = serverConfig.getDuration("timeout").toMillis millis
   val maxFailures: Int = serverConfig.getInt("circuit-breaker.maxFailures")
   val callTimeout: FiniteDuration = serverConfig.getDuration("circuit-breaker.callTimeout").toMillis millis
   val resetTimeout: FiniteDuration = serverConfig.getDuration("circuit-breaker.resetTimeout").toMillis millis

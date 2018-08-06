@@ -21,11 +21,9 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
 
-class Tr069Routes(breaker: CircuitBreaker, services: Tr069Services, authService: AuthenticationService, sessionLookupTimeout: FiniteDuration)
+class Tr069Routes(breaker: CircuitBreaker, services: Tr069Services, authService: AuthenticationService, timeout: FiniteDuration)
                  (implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
   extends Directives {
-
-  implicit val requestTimeout: Timeout = Timeout(1, TimeUnit.SECONDS)
 
   def routes: Route =
     logRequestResult("tr069") {
@@ -39,6 +37,7 @@ class Tr069Routes(breaker: CircuitBreaker, services: Tr069Services, authService:
     }
 
   def handle(soapRequest: SOAPRequest, user: String): Route = {
+    implicit val requestTimeout: Timeout = timeout
     val withBreaker = breaker.withCircuitBreaker(
       getConversationActor(user).flatMap(_ ? soapRequest)
     ).map(_.asInstanceOf[SOAPResponse])
@@ -76,7 +75,7 @@ class Tr069Routes(breaker: CircuitBreaker, services: Tr069Services, authService:
     val actorName = s"conversation-$user"
     val actorProps = ConversationActor.props(user, services)
     system.actorSelection(s"user/$actorName")
-      .resolveOne(sessionLookupTimeout)
+      .resolveOne(timeout)
       .recover { case _: Exception =>
         system.actorOf(actorProps, actorName)
       }
