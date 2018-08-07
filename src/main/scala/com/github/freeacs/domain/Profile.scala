@@ -1,3 +1,7 @@
 package com.github.freeacs.domain
 
-case class Profile(profileId: Option[Long], profileName: String, unitTypeId: Long)
+case class Profile(
+  profileName: String,
+  unitTypeId: Long,
+  profileId: Option[Long],
+)

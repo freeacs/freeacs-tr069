@@ -21,7 +21,7 @@ class ProfileDao(val config: DatabaseConfig[JdbcProfile])(implicit ec: Execution
         if (profile.isDefined)
           db.run(profileParameters.filter(pp => pp.profileId === profile.get.profileId).result)
         else
-          Future.successful(Seq())
+          Future.successful(Seq.empty)
       }
     } yield (
       profile.map(p => {

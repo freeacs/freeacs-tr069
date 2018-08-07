@@ -1,11 +1,11 @@
 package com.github.freeacs.domain
 
 final case class UnitType(
-  unitTypeId: Option[Long] = None,
   unitTypeName: String,
+  protocol: String,
+  unitTypeId: Option[Long] = None,
   matcherId: Option[String] = None,
   vendorName: Option[String] = None,
   description: Option[String] = None,
-  protocol: String,
-  params: Seq[UnitTypeParameter] = Seq()
+  params: Seq[UnitTypeParameter] = Seq.empty
 )

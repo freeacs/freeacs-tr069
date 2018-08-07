@@ -21,7 +21,7 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(implicit ec: Executio
         if (unitType.isDefined)
           db.run(unitTypeParameters.filter(_.unitTypeId === unitType.get.unitTypeId).result)
         else
-          Future.successful(Seq())
+          Future.successful(Seq.empty)
       }
     } yield (
       unitType.map(ut => {

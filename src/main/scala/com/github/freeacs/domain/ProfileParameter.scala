@@ -1,5 +1,7 @@
 package com.github.freeacs.domain
 
-class ProfileParameter {
-
-}
+final case class ProfileParameter(
+  profileId: Long,
+  unitTypeParamId: Long,
+  value: Option[String]
+)
