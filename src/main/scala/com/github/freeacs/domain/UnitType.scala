@@ -6,5 +6,6 @@ final case class UnitType(
   matcherId: Option[String] = None,
   vendorName: Option[String] = None,
   description: Option[String] = None,
-  protocol: String
+  protocol: String,
+  params: Seq[UnitTypeParameter] = Seq()
 )
