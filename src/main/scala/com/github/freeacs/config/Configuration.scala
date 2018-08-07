@@ -21,19 +21,20 @@ trait Configuration {
 }
 
 object Configuration {
-  def from(config: Config): Configuration = new ConfigurationImpl(config)
-}
+  def from(config: Config): Configuration =
+    new ConfigurationImpl(config)
 
-private class ConfigurationImpl(config: Config) extends Configuration {
+  private[this] class ConfigurationImpl(config: Config) extends Configuration {
 
-  val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db", config)
-  private val serverConfig = config.getConfig("server")
-  val responseTimeout: FiniteDuration = serverConfig.getDuration("response.timeout").toMillis millis
-  val actorTimeout: FiniteDuration = serverConfig.getDuration("actor.timeout").toMillis millis
-  val maxFailures: Int = serverConfig.getInt("circuit-breaker.maxFailures")
-  val callTimeout: FiniteDuration = serverConfig.getDuration("circuit-breaker.callTimeout").toMillis millis
-  val resetTimeout: FiniteDuration = serverConfig.getDuration("circuit-breaker.resetTimeout").toMillis millis
-  val hostname: String = serverConfig.getString("http.host")
-  val port: Int = serverConfig.getInt("http.port")
+    val dbConfig = DatabaseConfig.forConfig[JdbcProfile]("db", config)
+    private val serverConfig = config.getConfig("server")
+    val responseTimeout: FiniteDuration = serverConfig.getDuration("response.timeout").toMillis millis
+    val actorTimeout: FiniteDuration = serverConfig.getDuration("actor.timeout").toMillis millis
+    val maxFailures: Int = serverConfig.getInt("circuit-breaker.maxFailures")
+    val callTimeout: FiniteDuration = serverConfig.getDuration("circuit-breaker.callTimeout").toMillis millis
+    val resetTimeout: FiniteDuration = serverConfig.getDuration("circuit-breaker.resetTimeout").toMillis millis
+    val hostname: String = serverConfig.getString("http.host")
+    val port: Int = serverConfig.getInt("http.port")
 
+  }
 }
