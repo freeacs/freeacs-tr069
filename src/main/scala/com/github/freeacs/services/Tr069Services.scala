@@ -45,8 +45,8 @@ private class Tr069ServicesImpl(dbConfig: DatabaseConfig[JdbcProfile])(implicit 
         Some(
           Unit(
             unit.unitId,
-            UnitType(unitType.unitTypeId, unitType.unitTypeName, unitType.matcherId, unitType.vendorName, unitType.description, unitType.protocol),
-            Profile(profile.profileId, profile.profileName, profile.unitTypeId)
+            UnitType(unitType.unitTypeName, unitType.protocol, unitType.unitTypeId, unitType.matcherId, unitType.vendorName, unitType.description),
+            Profile(profile.profileName, profile.unitTypeId, profile.profileId)
           )
         )
       case _ =>
@@ -58,10 +58,10 @@ private class Tr069ServicesImpl(dbConfig: DatabaseConfig[JdbcProfile])(implicit 
       list.map(tuple =>
         UnitParameter(tuple._1.unitId,
           UnitTypeParameter(
-            tuple._2.unitTypeParameterId,
-            tuple._2.unitTypeId,
             tuple._2.name,
-            tuple._2.flags
+            tuple._2.flags,
+            tuple._2.unitTypeId,
+            tuple._2.unitTypeParameterId
           ), tuple._1.value)
       )
     })
@@ -70,18 +70,18 @@ private class Tr069ServicesImpl(dbConfig: DatabaseConfig[JdbcProfile])(implicit 
     unitTypeRepository.save(UnitTypeDTO(unitTypeName = name, description = Some("Auto generated"), protocol = "TR069"))
       .map(dto => {
         UnitType(
-          dto.unitTypeId,
           dto.unitTypeName,
+          dto.protocol,
+          dto.unitTypeId,
           dto.matcherId,
           dto.vendorName,
-          dto.description,
-          dto.protocol
+          dto.description
         )
       })
 
   def createProfile(name: String, unitTypeId: Long): Future[Profile] =
     profileRepository.save(ProfileDTO(profileName = name, unitTypeId = unitTypeId))
     .map(dto => {
-      Profile(dto.profileId, dto.profileName, dto.unitTypeId)
+      Profile(dto.profileName, dto.unitTypeId, dto.profileId)
     })
 }
