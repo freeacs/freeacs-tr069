@@ -67,7 +67,7 @@ object Tr069Services {
 
     def createUnitType(name: String): Future[UnitType] =
       unitTypeRepository.save(UnitTypeDTO(unitTypeName = name, description = Some("Auto generated"), protocol = "TR069"))
-        .map(dto => {
+        .map(dto =>
           UnitType(
             dto.unitTypeName,
             dto.protocol,
@@ -76,12 +76,10 @@ object Tr069Services {
             dto.vendorName,
             dto.description
           )
-        })
+        )
 
     def createProfile(name: String, unitTypeId: Long): Future[Profile] =
       profileRepository.save(ProfileDTO(profileName = name, unitTypeId = unitTypeId))
-        .map(dto => {
-          Profile(dto.profileName, dto.unitTypeId, dto.profileId)
-        })
+        .map(dto => Profile(dto.profileName, dto.unitTypeId, dto.profileId))
   }
 }
