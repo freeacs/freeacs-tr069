@@ -11,7 +11,7 @@ trait UnitTypeParameterTable extends UnitTypeTable { this: Dao =>
     def name = column[String]("NAME")
     def flags = column[String]("FLAGS")
 
-    def * = (unitTypeParamId.?, unitTypeId, name, flags) <> (UnitTypeParameter.tupled, UnitTypeParameter.unapply)
+    def * = (name, flags, unitTypeId, unitTypeParamId.?) <> (UnitTypeParameter.tupled, UnitTypeParameter.unapply)
   }
 
   val unitTypeParameters = TableQuery[UnitTypeParameters]

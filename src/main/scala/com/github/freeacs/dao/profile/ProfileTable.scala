@@ -14,7 +14,7 @@ trait ProfileTable extends UnitTypeTable { this: Dao =>
       _.unitTypeId, ForeignKeyAction.Restrict, ForeignKeyAction.Cascade
     )
 
-    def * = (profileId.?, profileName, unitTypeId) <> (Profile.tupled, Profile.unapply)
+    def * = (profileName, unitTypeId, profileId.?) <> (Profile.tupled, Profile.unapply)
   }
 
   val profiles = TableQuery[Profiles]
