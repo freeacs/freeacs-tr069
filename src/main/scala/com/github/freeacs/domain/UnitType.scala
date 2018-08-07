@@ -1,3 +1,10 @@
 package com.github.freeacs.domain
 
-case class UnitType(unitTypeId: Option[Long], unitTypeName: String)
+final case class UnitType(
+  unitTypeId: Option[Long] = None,
+  unitTypeName: String,
+  matcherId: Option[String] = None,
+  vendorName: Option[String] = None,
+  description: Option[String] = None,
+  protocol: String
+)

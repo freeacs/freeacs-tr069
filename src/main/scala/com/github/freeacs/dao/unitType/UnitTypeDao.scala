@@ -14,6 +14,9 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(implicit ec: Executio
   def list(): Future[Seq[UnitType]] =
     db.run(unitTypes.result)
 
+  def getByName(name: String): Future[Option[UnitType]] =
+    db.run(unitTypes.filter(_.unitTypeName === name).result.headOption)
+
   def save(unitType: UnitType): Future[UnitType] =
     db.run(unitTypes returning unitTypes.map(_.unitTypeId)
       into ((unitType, id) => unitType.copy(unitTypeId = Some(id)))

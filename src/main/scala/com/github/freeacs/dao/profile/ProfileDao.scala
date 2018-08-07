@@ -14,5 +14,8 @@ class ProfileDao(val config: DatabaseConfig[JdbcProfile])(implicit ec: Execution
   def list(): Future[Seq[Profile]] =
     db.run(profiles.result)
 
-  def save(profile: Profile): Future[Profile] = ???
+  def save(profile: Profile): Future[Profile] =
+    db.run(profiles returning profiles.map(_.profileId)
+      into ((profile, id) => profile.copy(profileId = Some(id)))
+      += profile)
 }
