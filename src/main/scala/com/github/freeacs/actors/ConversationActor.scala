@@ -28,6 +28,8 @@ class ConversationActor(user: String, services: Tr069Services)(implicit ec: Exec
           case Some(unit) =>
             Future.successful(newConversationState.copy(unit = Some(unit)))
           case _ =>
+            val unitTypeName = request.deviceId.productClass
+
             // TODO check if unit type exists
             // if not create it
             // create new unit

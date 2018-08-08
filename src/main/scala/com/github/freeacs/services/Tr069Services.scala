@@ -19,6 +19,8 @@ trait Tr069Services {
   def createUnitType(name: String): Future[UnitType]
 
   def createProfile(name: String, unitTypeId: Long): Future[Profile]
+
+  def getUnitTypeByName(name: String): Future[Option[UnitType]]
 }
 
 object Tr069Services {
@@ -81,5 +83,16 @@ object Tr069Services {
     def createProfile(name: String, unitTypeId: Long): Future[Profile] =
       profileRepository.save(ProfileDTO(profileName = name, unitTypeId = unitTypeId))
         .map(dto => Profile(dto.profileName, dto.unitTypeId, dto.profileId))
+
+    def getUnitTypeByName(name: String): Future[Option[UnitType]] =
+      unitTypeRepository.getByName(name)
+      .map {
+        case Some(dto) =>
+          Some(UnitType(dto._1.unitTypeName, dto._1.protocol, dto._1.unitTypeId, dto._1.matcherId, dto._1.vendorName, dto._1.description, params = dto._2.map(p => {
+            UnitTypeParameter(p.name, p.flags, p.unitTypeId, p.unitTypeParameterId)
+          })))
+        case None =>
+          None
+      }
   }
 }
