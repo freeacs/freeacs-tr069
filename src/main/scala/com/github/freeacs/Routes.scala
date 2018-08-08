@@ -22,43 +22,53 @@ import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
 
 class Routes(breaker: CircuitBreaker,
-                  services: Tr069Services,
-                  authService: AuthenticationService,
-                  responseTimeout: FiniteDuration,
-                  actorTimeout: FiniteDuration)
-                 (implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
+             services: Tr069Services,
+             authService: AuthenticationService,
+             responseTimeout: FiniteDuration,
+             actorTimeout: FiniteDuration)
+            (implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
   extends Directives {
 
   def routes: Route =
-      post {
-        path("tr069") {
-          logRequestResult("tr069") {
-            extractCredentials {
-              case Some(credentials) =>
-                credentials.scheme() match {
-                  case "Basic" =>
-                    val tuple = decodeBasicAuth(credentials.token())
-                    val username = tuple._1
-                    val password = tuple._2
-                    onComplete(authService.authenticator(username, password)) {
-                      case Success(Right(_)) =>
-                        entity(as[SOAPRequest]) { soapRequest =>
-                          complete(handle(soapRequest, username))
-                        }
-                      case Success(Left(_)) =>
-                        complete(unauthorized)
-                      case Failure(_) =>
-                        complete(StatusCodes.InternalServerError)
-                    }
-                }
-              case None =>
-                complete(unauthorized)
-            }
-          }
-        }
+    post {
+      path("tr069") {
+        authenticateConversation((u, p) =>
+          entity(as[SOAPRequest]) { soapRequest =>
+            complete(handle(soapRequest, u, p))
+          })
       }
+    }
 
-  private [this] def decodeBasicAuth(authHeader: String): (String, String) = {
+  def authenticateConversation(route: (String, String) => Route) = {
+    extractCredentials {
+      case Some(credentials) =>
+        credentials.scheme() match {
+          case "Basic" =>
+            val (username, password) = decodeBasicAuth(credentials.token())
+            authenticate(username, password, route)
+          case "Digest" =>
+            val username = credentials.params("username")
+            val password = credentials.params("response")
+            // TODO make shit work
+            authenticate(username, password, route)
+        }
+      case None =>
+        complete(unauthorized)
+    }
+  }
+
+  def authenticate(username: String, password: String, route: (String, String) => Route) = {
+    onComplete(authService.authenticator(username, password)) {
+      case Success(Right(_)) =>
+        route(username, password)
+      case Success(Left(_)) =>
+        complete(unauthorized)
+      case Failure(_) =>
+        complete(StatusCodes.InternalServerError)
+    }
+  }
+
+  def decodeBasicAuth(authHeader: String) = {
     val baStr = authHeader.replaceFirst("Basic ", "")
     val decoded = new sun.misc.BASE64Decoder().decodeBuffer(baStr)
     val Array(user, password) = new String(decoded).split(":")
@@ -71,29 +81,29 @@ class Routes(breaker: CircuitBreaker,
       headers = immutable.Seq(RawHeader("WWW-Authenticate", "Basic realm=\"auth@freeacs.com\""))
     )
 
-  def handle(soapRequest: SOAPRequest, user: String): Future[ToResponseMarshallable] = {
+  def handle(soapRequest: SOAPRequest, user: String, pass: String): Future[ToResponseMarshallable] = {
     implicit val timeout: Timeout = responseTimeout
     breaker.withCircuitBreaker(
       getConversationActor(user).flatMap(_ ? soapRequest)
     ).map(_.asInstanceOf[SOAPResponse])
-        .map[ToResponseMarshallable] { response =>
-          Marshal(response).to[Either[SOAPResponse, NodeSeq]].map {
-            case Right(elm) =>
-              makeHttpResponse(StatusCodes.OK, MediaTypes.`text/xml`, Some(elm.toString()))
-            case Left(InvalidRequest) =>
-              makeHttpResponse(StatusCodes.BadRequest, MediaTypes.`text/plain`, Some("Invalid request"))
-            case _ =>
-              makeHttpResponse(StatusCodes.OK, MediaTypes.`text/plain`, None)
-          }
-        }.recover {
-          case _: CircuitBreakerOpenException =>
-            Future.successful(HttpResponse(StatusCodes.TooManyRequests).withEntity("Server Busy"))
-          case e: Throwable =>
-            Future.successful(HttpResponse(StatusCodes.InternalServerError))
+      .map[ToResponseMarshallable] { response =>
+      Marshal(response).to[Either[SOAPResponse, NodeSeq]].map {
+        case Right(elm) =>
+          makeHttpResponse(StatusCodes.OK, MediaTypes.`text/xml`, Some(elm.toString()))
+        case Left(InvalidRequest) =>
+          makeHttpResponse(StatusCodes.BadRequest, MediaTypes.`text/plain`, Some("Invalid request"))
+        case _ =>
+          makeHttpResponse(StatusCodes.OK, MediaTypes.`text/plain`, None)
+      }
+    }.recover {
+      case _: CircuitBreakerOpenException =>
+        Future.successful(HttpResponse(StatusCodes.TooManyRequests).withEntity("Server Busy"))
+      case e: Throwable =>
+        Future.successful(HttpResponse(StatusCodes.InternalServerError))
     }
   }
 
-  private def makeHttpResponse(status: StatusCode, charset: MediaType.WithOpenCharset, str: Option[String]) = {
+  def makeHttpResponse(status: StatusCode, charset: MediaType.WithOpenCharset, str: Option[String]) = {
     HttpResponse(
       status = status,
       entity = HttpEntity.CloseDelimited(
