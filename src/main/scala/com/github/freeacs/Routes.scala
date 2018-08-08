@@ -1,18 +1,20 @@
 package com.github.freeacs
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.http.scaladsl.marshalling.Marshal
+import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.{CircuitBreaker, CircuitBreakerOpenException, ask}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.{ByteString, Timeout}
-import com.github.freeacs.services.{AuthenticationService, Tr069Services}
 import com.github.freeacs.actors.ConversationActor
+import com.github.freeacs.services.{AuthenticationService, Tr069Services}
 import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
 
+import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
@@ -28,24 +30,53 @@ class Routes(breaker: CircuitBreaker,
   extends Directives {
 
   def routes: Route =
-    logRequestResult("tr069") {
-      authenticateBasicAsync("FreeACS", authService.authenticator) { user =>
-        (post & entity(as[SOAPRequest])) { soapRequest =>
-          path("tr069") {
-            handle(soapRequest, user)
+      post {
+        path("tr069") {
+          logRequestResult("tr069") {
+            extractCredentials {
+              case Some(credentials) =>
+                credentials.scheme() match {
+                  case "Basic" =>
+                    val tuple = decodeBasicAuth(credentials.token())
+                    val username = tuple._1
+                    val password = tuple._2
+                    onComplete(authService.authenticator(username, password)) {
+                      case Success(Right(_)) =>
+                        entity(as[SOAPRequest]) { soapRequest =>
+                          complete(handle(soapRequest, username))
+                        }
+                      case Success(Left(_)) =>
+                        complete(unauthorized)
+                      case Failure(_) =>
+                        complete(StatusCodes.InternalServerError)
+                    }
+                }
+              case None =>
+                complete(unauthorized)
+            }
           }
         }
       }
-    }
 
-  def handle(soapRequest: SOAPRequest, user: String): Route = {
+  private [this] def decodeBasicAuth(authHeader: String): (String, String) = {
+    val baStr = authHeader.replaceFirst("Basic ", "")
+    val decoded = new sun.misc.BASE64Decoder().decodeBuffer(baStr)
+    val Array(user, password) = new String(decoded).split(":")
+    (user, password)
+  }
+
+  def unauthorized =
+    HttpResponse(
+      status = StatusCodes.Unauthorized,
+      headers = immutable.Seq(RawHeader("WWW-Authenticate", "Basic realm=\"auth@freeacs.com\""))
+    )
+
+  def handle(soapRequest: SOAPRequest, user: String): Future[ToResponseMarshallable] = {
     implicit val timeout: Timeout = responseTimeout
-    val withBreaker = breaker.withCircuitBreaker(
+    breaker.withCircuitBreaker(
       getConversationActor(user).flatMap(_ ? soapRequest)
     ).map(_.asInstanceOf[SOAPResponse])
-    onComplete(withBreaker) {
-      case Success(response: SOAPResponse) =>
-        complete(
+        .map[ToResponseMarshallable] { response =>
           Marshal(response).to[Either[SOAPResponse, NodeSeq]].map {
             case Right(elm) =>
               makeHttpResponse(StatusCodes.OK, MediaTypes.`text/xml`, Some(elm.toString()))
@@ -54,12 +85,11 @@ class Routes(breaker: CircuitBreaker,
             case _ =>
               makeHttpResponse(StatusCodes.OK, MediaTypes.`text/plain`, None)
           }
-        )
-      case Failure(_: CircuitBreakerOpenException) =>
-        complete(HttpResponse(StatusCodes.TooManyRequests).withEntity("Server Busy"))
-      case Failure(e) =>
-        e.printStackTrace()
-        complete(StatusCodes.InternalServerError)
+        }.recover {
+          case _: CircuitBreakerOpenException =>
+            Future.successful(HttpResponse(StatusCodes.TooManyRequests).withEntity("Server Busy"))
+          case e: Throwable =>
+            Future.successful(HttpResponse(StatusCodes.InternalServerError))
     }
   }
 
