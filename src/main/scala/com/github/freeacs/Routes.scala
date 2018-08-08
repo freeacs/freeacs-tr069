@@ -39,7 +39,7 @@ class Routes(breaker: CircuitBreaker,
       }
     }
 
-  def authenticateConversation(route: (String, String) => Route) = {
+  def authenticateConversation(route: (String, String) => Route) =
     extractCredentials {
       case Some(credentials) =>
         credentials.scheme() match {
@@ -55,9 +55,8 @@ class Routes(breaker: CircuitBreaker,
       case None =>
         complete(unauthorized)
     }
-  }
 
-  def authenticate(username: String, password: String, route: (String, String) => Route) = {
+  def authenticate(username: String, password: String, route: (String, String) => Route) =
     onComplete(authService.authenticator(username, password)) {
       case Success(Right(_)) =>
         route(username, password)
@@ -66,7 +65,6 @@ class Routes(breaker: CircuitBreaker,
       case Failure(_) =>
         complete(StatusCodes.InternalServerError)
     }
-  }
 
   def decodeBasicAuth(authHeader: String) = {
     val baStr = authHeader.replaceFirst("Basic ", "")
@@ -82,7 +80,7 @@ class Routes(breaker: CircuitBreaker,
     )
 
   def handle(soapRequest: SOAPRequest, user: String, pass: String): Future[ToResponseMarshallable] = {
-    implicit val timeout: Timeout = responseTimeout
+    implicit val timeout: Timeout = actorTimeout
     breaker.withCircuitBreaker(
       getConversationActor(user).flatMap(_ ? soapRequest)
     ).map(_.asInstanceOf[SOAPResponse])
@@ -103,7 +101,7 @@ class Routes(breaker: CircuitBreaker,
     }
   }
 
-  def makeHttpResponse(status: StatusCode, charset: MediaType.WithOpenCharset, str: Option[String]) = {
+  def makeHttpResponse(status: StatusCode, charset: MediaType.WithOpenCharset, str: Option[String]) =
     HttpResponse(
       status = status,
       entity = HttpEntity.CloseDelimited(
@@ -111,16 +109,12 @@ class Routes(breaker: CircuitBreaker,
         Source.single(str.map(ByteString.apply).getOrElse(ByteString.empty))
       )
     )
-  }
 
-  def getConversationActor(user: String): Future[ActorRef] = {
-    val actorName = s"conversation-$user"
-    val actorProps = ConversationActor.props(user, services)
-    system.actorSelection(s"user/$actorName")
+  def getConversationActor(user: String): Future[ActorRef] =
+    system.actorSelection(s"user/conversation-$user")
       .resolveOne(actorTimeout)
       .recover { case _: Exception =>
-        system.actorOf(actorProps, actorName)
+        system.actorOf(ConversationActor.props(user, services), s"conversation-$user")
       }
-  }
 
 }
