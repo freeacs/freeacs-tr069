@@ -29,11 +29,18 @@ class ConversationActor(user: String, services: Tr069Services)(implicit ec: Exec
             Future.successful(newConversationState.copy(unit = Some(unit)))
           case _ =>
             val unitTypeName = request.deviceId.productClass
-
-            // TODO check if unit type exists
-            // if not create it
-            // create new unit
-           Future.successful(newConversationState) // FIXME replace
+            services.getUnitTypeByName(unitTypeName)
+                .flatMap {
+                  case Some(ut) =>
+                    Future.successful(ut)
+                  case None =>
+                    for {
+                      unitType <- services.createUnitType(unitTypeName)
+                      profile <- services.createProfile("Default", unitType.unitTypeId.get)
+                      unit <- services.createUnit(user)
+                      params <- services.createUnitTypeParameters(Seq(("System.Test", "RW")), unitType.unitTypeId.get)
+                    } yield unitType.copy(params = params)
+                }.map(ut => newConversationState.copy(unitType = Some(ut)))
         }.recover {
         case e =>
           log.error(s"Failed to retrieve unit params {}", e)

@@ -2,6 +2,7 @@ package com.github.freeacs.services
 
 import com.github.freeacs.dao.profile.{ProfileDao, ProfileParameterDao, Profile => ProfileDTO}
 import com.github.freeacs.dao.unit.{UnitDao, UnitParameterDao}
+import com.github.freeacs.dao.unitType
 import com.github.freeacs.dao.unitType.{UnitTypeDao, UnitTypeParameterDao, UnitType => UnitTypeDTO}
 import com.github.freeacs.domain._
 import slick.basic.DatabaseConfig
@@ -21,6 +22,10 @@ trait Tr069Services {
   def createProfile(name: String, unitTypeId: Long): Future[Profile]
 
   def getUnitTypeByName(name: String): Future[Option[UnitType]]
+
+  def createUnitTypeParameters(params: Seq[(String, String)], unitTypeId: Long): Future[Seq[UnitTypeParameter]]
+
+  def createUnit(userId: String): Future[Unit]
 }
 
 object Tr069Services {
@@ -86,13 +91,20 @@ object Tr069Services {
 
     def getUnitTypeByName(name: String): Future[Option[UnitType]] =
       unitTypeRepository.getByName(name)
-      .map {
-        case Some(dto) =>
-          Some(UnitType(dto._1.unitTypeName, dto._1.protocol, dto._1.unitTypeId, dto._1.matcherId, dto._1.vendorName, dto._1.description, params = dto._2.map(p => {
-            UnitTypeParameter(p.name, p.flags, p.unitTypeId, p.unitTypeParameterId)
-          })))
-        case None =>
-          None
-      }
+        .map {
+          case Some(dto) =>
+            Some(UnitType(dto._1.unitTypeName, dto._1.protocol, dto._1.unitTypeId, dto._1.matcherId, dto._1.vendorName, dto._1.description, params = dto._2.map(p => {
+              UnitTypeParameter(p.name, p.flags, p.unitTypeId, p.unitTypeParameterId)
+            })))
+          case _ =>
+            None
+        }
+
+    def createUnitTypeParameters(params: Seq[(String, String)], unitTypeId: Long): Future[Seq[UnitTypeParameter]] =
+      unitTypeParameterRepository.save(params.map(p => unitType.UnitTypeParameter(p._1, p._2, unitTypeId)))
+        .map(_.map(p => UnitTypeParameter(p.name, p.flags, p.unitTypeId, p.unitTypeParameterId)))
+
+    def createUnit(userId: String): Future[Unit] = ???
   }
+
 }
