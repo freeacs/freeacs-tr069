@@ -3,7 +3,9 @@ package com.github.freeacs.xml.marshaller
 import com.github.freeacs.xml._
 import scala.xml.Elem
 
-object InformXML extends XmlMarshaller[InformRequest, InformResponse] with EnvelopeXML {
+object InformXML
+    extends XmlMarshaller[InformRequest, InformResponse]
+    with EnvelopeXML {
 
   def marshal(informResponse: InformResponse): Elem =
     withEnvelope(

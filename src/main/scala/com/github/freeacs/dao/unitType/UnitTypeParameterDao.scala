@@ -7,8 +7,10 @@ import slick.jdbc.JdbcProfile
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 
-class UnitTypeParameterDao(val config: DatabaseConfig[JdbcProfile])(implicit ec: ExecutionContext)
-  extends Dao with UnitTypeParameterTable {
+class UnitTypeParameterDao(val config: DatabaseConfig[JdbcProfile])(
+    implicit ec: ExecutionContext)
+    extends Dao
+    with UnitTypeParameterTable {
 
   import config.profile.api._
 
@@ -16,7 +18,12 @@ class UnitTypeParameterDao(val config: DatabaseConfig[JdbcProfile])(implicit ec:
     db.run(unitTypeParameters.result)
 
   def save(parameters: Seq[UnitTypeParameter]): Future[Seq[UnitTypeParameter]] =
-    db.run(DBIO.sequence(parameters.map(p => unitTypeParameters returning unitTypeParameters.map(_.unitTypeParamId)
-      into ((unitTypeParam, id) => unitTypeParam.copy(unitTypeParameterId = Some(id)))
-      += p)).transactionally)
+    db.run(
+      DBIO
+        .sequence(parameters.map(p =>
+          unitTypeParameters returning unitTypeParameters.map(_.unitTypeParamId)
+            into ((unitTypeParam,
+                   id) => unitTypeParam.copy(unitTypeParameterId = Some(id)))
+            += p))
+        .transactionally)
 }

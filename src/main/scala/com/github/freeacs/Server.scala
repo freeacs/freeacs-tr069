@@ -14,17 +14,19 @@ import scala.language.postfixOps
 
 trait Server {
 
-  implicit val system: ActorSystem = ActorSystem("freeacs-http")
-  implicit val mat: ActorMaterializer = ActorMaterializer()
+  implicit val system: ActorSystem          = ActorSystem("freeacs-http")
+  implicit val mat: ActorMaterializer       = ActorMaterializer()
   implicit val ec: ExecutionContextExecutor = system.dispatcher
-  implicit val configuration: Configuration = Configuration.from(ConfigFactory.load())
+  implicit val configuration: Configuration =
+    Configuration.from(ConfigFactory.load())
 
   import configuration._
 
-  val breaker = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
-  val services = Tr069Services.from(dbConfig)
+  val breaker =
+    new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
+  val services    = Tr069Services.from(dbConfig)
   val authService = AuthenticationService.from(services)
-  val routes = new Routes(breaker, services, authService, configuration)
+  val routes      = new Routes(breaker, services, authService, configuration)
 
   val server = Http().bindAndHandle(routes.routes, hostname, port)
   StdIn.readLine()

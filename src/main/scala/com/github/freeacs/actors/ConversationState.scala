@@ -2,7 +2,8 @@ package com.github.freeacs.actors
 
 sealed trait ConversationState
 
-case class GoTo(state: ConversationState, data: ConversationData) extends ConversationState
+case class GoTo(state: ConversationState, data: ConversationData)
+    extends ConversationState
 
 case object WaitingForGoTo extends ConversationState
 

@@ -3,10 +3,10 @@ package com.github.freeacs.xml
 import java.net.URLDecoder
 
 final case class DeviceIdStruct(
-  manufacturer: String,
-  oui: String,
-  productClass: String,
-  serialNumber: String
+    manufacturer: String,
+    oui: String,
+    productClass: String,
+    serialNumber: String
 ) {
   val unitId: String = {
     var unitId: String = null

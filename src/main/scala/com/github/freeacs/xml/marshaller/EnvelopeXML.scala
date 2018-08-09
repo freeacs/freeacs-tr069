@@ -1,6 +1,10 @@
 package com.github.freeacs.xml.marshaller
 
-import com.github.freeacs.xml.{DeviceIdStruct, EventStruct, ParameterValueStruct}
+import com.github.freeacs.xml.{
+  DeviceIdStruct,
+  EventStruct,
+  ParameterValueStruct
+}
 
 import scala.collection.immutable
 import scala.xml.Elem
@@ -20,7 +24,8 @@ trait EnvelopeXML {
       </soapenv:Body>
     </soapenv:Envelope>
 
-  def parseParameterValueStructs(xml: Elem): immutable.Seq[ParameterValueStruct] =
+  def parseParameterValueStructs(
+      xml: Elem): immutable.Seq[ParameterValueStruct] =
     (xml \\ "ParameterValueStruct").seq
       .map(p => ParameterValueStruct((p \\ "Name").text, (p \\ "Value").text))
 

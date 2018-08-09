@@ -1,5 +1,3 @@
 package com.github.freeacs
 
-object Main extends App with Server {
-
-}
+object Main extends App with Server {}

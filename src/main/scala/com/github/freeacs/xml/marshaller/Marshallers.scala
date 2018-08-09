@@ -12,7 +12,8 @@ import scala.xml.{Elem, NodeSeq, XML}
 
 object Marshallers extends ScalaXmlSupport {
 
-  implicit def soapResponseXmlFormat: Marshaller[SOAPResponse, Either[SOAPResponse, NodeSeq]] =
+  implicit def soapResponseXmlFormat
+    : Marshaller[SOAPResponse, Either[SOAPResponse, NodeSeq]] =
     Marshaller.opaque[SOAPResponse, Either[SOAPResponse, NodeSeq]] {
       case inform: InformResponse =>
         Right(InformXML.marshal(inform))
@@ -26,7 +27,8 @@ object Marshallers extends ScalaXmlSupport {
         Left(response)
     }
 
-  implicit def soapRequestXmlUnmarshaller(implicit mat: Materializer): FromEntityUnmarshaller[SOAPRequest] =
+  implicit def soapRequestXmlUnmarshaller(
+      implicit mat: Materializer): FromEntityUnmarshaller[SOAPRequest] =
     Unmarshaller.byteStringUnmarshaller
       .mapWithCharset { (data, charset) =>
         if (data.nonEmpty)
@@ -50,9 +52,11 @@ object Marshallers extends ScalaXmlSupport {
     }
 
   def parseMethod(xml: Elem): SOAPMethod.Value =
-    (xml \\ "Body").headOption.flatMap(_.child.collectFirst {
-      case el: Elem => SOAPMethod.values.find(_.toString == el.label)
-    }).flatten getOrElse SOAPMethod.Empty
+    (xml \\ "Body").headOption
+      .flatMap(_.child.collectFirst {
+        case el: Elem => SOAPMethod.values.find(_.toString == el.label)
+      })
+      .flatten getOrElse SOAPMethod.Empty
 
   def decodeData(data: ByteString, charset: HttpCharset): String =
     if (charset == HttpCharsets.`UTF-8`)

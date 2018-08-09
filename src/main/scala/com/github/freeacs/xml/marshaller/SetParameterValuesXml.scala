@@ -1,10 +1,15 @@
 package com.github.freeacs.xml.marshaller
 
-import com.github.freeacs.xml.{SetParameterValuesRequest, SetParameterValuesResponse}
+import com.github.freeacs.xml.{
+  SetParameterValuesRequest,
+  SetParameterValuesResponse
+}
 
 import scala.xml.Elem
 
-object SetParameterValuesXml extends XmlMarshaller[SetParameterValuesResponse, SetParameterValuesRequest] with EnvelopeXML {
+object SetParameterValuesXml
+    extends XmlMarshaller[SetParameterValuesResponse, SetParameterValuesRequest]
+    with EnvelopeXML {
   def marshal(informResponse: SetParameterValuesRequest): Elem =
     withEnvelope(
       <cwmp:SetParameterValues>

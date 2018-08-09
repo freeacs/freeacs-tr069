@@ -6,6 +6,9 @@ scalaVersion := "2.12.6"
 
 enablePlugins(JavaAppPackaging)
 enablePlugins(ScalaxbPlugin)
+enablePlugins(ScalafmtPlugin)
+
+scalafmtOnCompile := true
 
 lazy val akkaHttpV = "10.1.3"
 lazy val akkaV = "2.5.14"
