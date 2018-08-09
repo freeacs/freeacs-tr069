@@ -1,0 +1,25 @@
+cache:
+  untracked: true
+  paths:
+  - cache
+
+stages:
+- stylecheck
+- test
+
+check style and formatting:
+  stage: stylecheck
+  tags:
+  - docker
+  script:
+  # Ensure that the pipeline fails fast if there are issues with the
+  # style or formatting
+  - sbt clean scalafmt
+  - git diff --exit-code || (echo "ERROR Code formatting check failed, see differences above."; false)
+
+run test suites:
+  stage: test
+  tags:
+  - docker
+  script:
+  - sbt test
