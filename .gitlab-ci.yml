@@ -14,8 +14,6 @@ stages:
 
 check style and formatting:
   stage: stylecheck
-  tags:
-  - docker
   script:
   # Ensure that the pipeline fails fast if there are issues with the
   # style or formatting
@@ -24,7 +22,5 @@ check style and formatting:
 
 run test suites:
   stage: test
-  tags:
-  - docker
   script:
   - sbt test
