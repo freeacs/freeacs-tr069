@@ -9,8 +9,8 @@ import slick.jdbc.JdbcProfile
 import scala.concurrent.{ExecutionContext, Future}
 
 class UnitDao(val config: DatabaseConfig[JdbcProfile])(
-    implicit ec: ExecutionContext)
-    extends Dao
+    implicit ec: ExecutionContext
+) extends Dao
     with UnitTable
     with ProfileTable {
 
@@ -34,5 +34,6 @@ class UnitDao(val config: DatabaseConfig[JdbcProfile])(
         .on(_._1.profileId === _.profileId)
         .map(tuple => (tuple._1._1, tuple._1._2, tuple._2))
         .result
-        .headOption)
+        .headOption
+    )
 }

@@ -14,12 +14,14 @@ trait UnitTypeTable { this: Dao =>
     def protocol     = column[String]("PROTOCOL")
 
     def * =
-      (unitTypeName,
-       protocol,
-       unitTypeId.?,
-       matcherId.?,
-       vendorName.?,
-       description.?) <> (UnitType.tupled, UnitType.unapply)
+      (
+        unitTypeName,
+        protocol,
+        unitTypeId.?,
+        matcherId.?,
+        vendorName.?,
+        description.?
+      ) <> (UnitType.tupled, UnitType.unapply)
   }
 
   val unitTypes = TableQuery[UnitTypes]

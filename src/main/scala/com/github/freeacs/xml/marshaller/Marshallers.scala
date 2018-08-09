@@ -28,14 +28,14 @@ object Marshallers extends ScalaXmlSupport {
     }
 
   implicit def soapRequestXmlUnmarshaller(
-      implicit mat: Materializer): FromEntityUnmarshaller[SOAPRequest] =
-    Unmarshaller.byteStringUnmarshaller
-      .mapWithCharset { (data, charset) =>
-        if (data.nonEmpty)
-          parseSOAPRequest(XML.loadString(decodeData(data, charset)))
-        else
-          EmptyRequest
-      }
+      implicit mat: Materializer
+  ): FromEntityUnmarshaller[SOAPRequest] =
+    Unmarshaller.byteStringUnmarshaller.mapWithCharset { (data, charset) =>
+      if (data.nonEmpty)
+        parseSOAPRequest(XML.loadString(decodeData(data, charset)))
+      else
+        EmptyRequest
+    }
 
   def parseSOAPRequest(xml: Elem): SOAPRequest =
     parseMethod(xml) match {

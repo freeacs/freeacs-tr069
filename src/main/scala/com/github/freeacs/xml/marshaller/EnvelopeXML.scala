@@ -25,7 +25,8 @@ trait EnvelopeXML {
     </soapenv:Envelope>
 
   def parseParameterValueStructs(
-      xml: Elem): immutable.Seq[ParameterValueStruct] =
+      xml: Elem
+  ): immutable.Seq[ParameterValueStruct] =
     (xml \\ "ParameterValueStruct").seq
       .map(p => ParameterValueStruct((p \\ "Name").text, (p \\ "Value").text))
 

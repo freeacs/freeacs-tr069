@@ -7,8 +7,8 @@ import slick.jdbc.JdbcProfile
 import scala.concurrent.{ExecutionContext, Future}
 
 class ProfileParameterDao(val config: DatabaseConfig[JdbcProfile])(
-    implicit ec: ExecutionContext)
-    extends Dao
+    implicit ec: ExecutionContext
+) extends Dao
     with ProfileParameterTable {
 
   import config.profile.api._

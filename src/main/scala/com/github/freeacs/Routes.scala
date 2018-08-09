@@ -8,7 +8,7 @@ import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.{Directives, Route}
-import akka.pattern.{CircuitBreaker, CircuitBreakerOpenException, ask}
+import akka.pattern.{ask, CircuitBreaker, CircuitBreakerOpenException}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.{ByteString, Timeout}
@@ -26,12 +26,12 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
 
-class Routes(breaker: CircuitBreaker,
-             services: Tr069Services,
-             authService: AuthenticationService,
-             configuration: Configuration)(implicit mat: Materializer,
-                                           system: ActorSystem,
-                                           ec: ExecutionContext)
+class Routes(
+    breaker: CircuitBreaker,
+    services: Tr069Services,
+    authService: AuthenticationService,
+    configuration: Configuration
+)(implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
     extends Directives {
 
   val log = LoggerFactory.getLogger(getClass)
@@ -46,7 +46,8 @@ class Routes(breaker: CircuitBreaker,
               (username) =>
                 entity(as[SOAPRequest]) { soapRequest =>
                   complete(handle(soapRequest, username))
-              })
+              }
+            )
           }
         }
       }
@@ -94,7 +95,8 @@ class Routes(breaker: CircuitBreaker,
     }
 
   def verifyDigest(username: String, params: Map[String, String])(
-      secret: String): Boolean = {
+      secret: String
+  ): Boolean = {
     val nonce    = params("nonce")
     val nc       = params("nc")
     val cnonce   = params("cnonce")
@@ -111,7 +113,8 @@ class Routes(breaker: CircuitBreaker,
             nonce,
             nc,
             cnonce,
-            qop) == response))
+            qop
+          ) == response))
         secret.substring(0, 16)
       else
         secret
@@ -120,14 +123,16 @@ class Routes(breaker: CircuitBreaker,
       .equals(response)
   }
 
-  def passwordMd5(username: String,
-                  password: String,
-                  method: String,
-                  uri: String,
-                  nonce: String,
-                  nc: String,
-                  cnonce: String,
-                  qop: String): String = {
+  def passwordMd5(
+      username: String,
+      password: String,
+      method: String,
+      uri: String,
+      nonce: String,
+      nc: String,
+      cnonce: String,
+      qop: String
+  ): String = {
     val a1    = s"$username:${configuration.digestRealm}:$password"
     val md5a1 = DigestUtils.md5Hex(a1)
     val a2    = s"$method:$uri"
@@ -136,11 +141,11 @@ class Routes(breaker: CircuitBreaker,
   }
 
   /**
-    * Convert the authentication username to unitid (should be 1:1, but there might be some
-    * vendor specific problems to solve...
-    *
-    * @throws UnsupportedEncodingException thrown if url decoding fails
-    */
+   * Convert the authentication username to unitid (should be 1:1, but there might be some
+   * vendor specific problems to solve...
+   *
+   * @throws UnsupportedEncodingException thrown if url decoding fails
+   */
   def username2unitId(username: String): String = {
     try URLDecoder.decode(username, "UTF-8")
     catch {
@@ -153,7 +158,8 @@ class Routes(breaker: CircuitBreaker,
     val realm: String = configuration.digestRealm
     val qop           = configuration.digestQop
     val nonce = DigestUtils.md5Hex(
-      s"$remoteIp:${System.currentTimeMillis}:${configuration.digestSecret}")
+      s"$remoteIp:${System.currentTimeMillis}:${configuration.digestSecret}"
+    )
     val opaque = DigestUtils.md5Hex(nonce)
     val authHeader =
       s"""Digest realm="$realm", qop="$qop", nonce="$nonce", opaque="$opaque""""
@@ -172,7 +178,8 @@ class Routes(breaker: CircuitBreaker,
     HttpResponse(
       status = StatusCodes.Unauthorized,
       headers = immutable.Seq(
-        RawHeader("WWW-Authenticate", s"""Basic realm="$realm""""))
+        RawHeader("WWW-Authenticate", s"""Basic realm="$realm"""")
+      )
     )
   }
 
@@ -183,8 +190,10 @@ class Routes(breaker: CircuitBreaker,
     )
   }
 
-  def handle(soapRequest: SOAPRequest,
-             user: String): Future[ToResponseMarshallable] = {
+  def handle(
+      soapRequest: SOAPRequest,
+      user: String
+  ): Future[ToResponseMarshallable] = {
     implicit val timeout: Timeout = configuration.responseTimeout
     breaker
       .withCircuitBreaker(
@@ -194,13 +203,17 @@ class Routes(breaker: CircuitBreaker,
       .map[ToResponseMarshallable] { response =>
         Marshal(response).to[Either[SOAPResponse, NodeSeq]].map {
           case Right(elm) =>
-            makeHttpResponse(StatusCodes.OK,
-                             MediaTypes.`text/xml`,
-                             Some(elm.toString()))
+            makeHttpResponse(
+              StatusCodes.OK,
+              MediaTypes.`text/xml`,
+              Some(elm.toString())
+            )
           case Left(InvalidRequest) =>
-            makeHttpResponse(StatusCodes.BadRequest,
-                             MediaTypes.`text/plain`,
-                             Some("Invalid request"))
+            makeHttpResponse(
+              StatusCodes.BadRequest,
+              MediaTypes.`text/plain`,
+              Some("Invalid request")
+            )
           case _ =>
             makeHttpResponse(StatusCodes.OK, MediaTypes.`text/plain`, None)
         }
@@ -208,15 +221,18 @@ class Routes(breaker: CircuitBreaker,
       .recover {
         case _: CircuitBreakerOpenException =>
           Future.successful(
-            HttpResponse(StatusCodes.TooManyRequests).withEntity("Server Busy"))
+            HttpResponse(StatusCodes.TooManyRequests).withEntity("Server Busy")
+          )
         case e: Throwable =>
           Future.successful(HttpResponse(StatusCodes.InternalServerError))
       }
   }
 
-  def makeHttpResponse(status: StatusCode,
-                       charset: MediaType.WithOpenCharset,
-                       str: Option[String]) =
+  def makeHttpResponse(
+      status: StatusCode,
+      charset: MediaType.WithOpenCharset,
+      str: Option[String]
+  ) =
     HttpResponse(
       status = status,
       entity = HttpEntity.CloseDelimited(
@@ -231,8 +247,10 @@ class Routes(breaker: CircuitBreaker,
       .resolveOne(configuration.actorTimeout)
       .recover {
         case _: Exception =>
-          system.actorOf(ConversationActor.props(user, services),
-                         s"conversation-$user")
+          system.actorOf(
+            ConversationActor.props(user, services),
+            s"conversation-$user"
+          )
       }
 
 }

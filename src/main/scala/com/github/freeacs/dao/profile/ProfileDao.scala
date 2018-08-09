@@ -7,8 +7,8 @@ import slick.jdbc.JdbcProfile
 import scala.concurrent.{ExecutionContext, Future}
 
 class ProfileDao(val config: DatabaseConfig[JdbcProfile])(
-    implicit ec: ExecutionContext)
-    extends Dao
+    implicit ec: ExecutionContext
+) extends Dao
     with ProfileTable
     with ProfileParameterTable {
 
@@ -19,19 +19,24 @@ class ProfileDao(val config: DatabaseConfig[JdbcProfile])(
 
   def getByNameAndUnitType(
       name: String,
-      unitTypeId: Long): Future[Option[(Profile, Seq[ProfileParameter])]] =
+      unitTypeId: Long
+  ): Future[Option[(Profile, Seq[ProfileParameter])]] =
     for {
       profile <- db.run(
-        profiles
-          .filter(p => p.profileName === name && p.unitTypeId === unitTypeId)
-          .result
-          .headOption)
+                  profiles
+                    .filter(
+                      p => p.profileName === name && p.unitTypeId === unitTypeId
+                    )
+                    .result
+                    .headOption
+                )
       params <- {
         if (profile.isDefined)
           db.run(
             profileParameters
               .filter(pp => pp.profileId === profile.get.profileId)
-              .result)
+              .result
+          )
         else
           Future.successful(Seq.empty)
       }
@@ -46,5 +51,6 @@ class ProfileDao(val config: DatabaseConfig[JdbcProfile])(
     db.run(
       profiles returning profiles.map(_.profileId)
         into ((profile, id) => profile.copy(profileId = Some(id)))
-        += profile)
+        += profile
+    )
 }

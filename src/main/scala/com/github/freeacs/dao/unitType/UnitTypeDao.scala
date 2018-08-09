@@ -7,8 +7,8 @@ import slick.jdbc.JdbcProfile
 import scala.concurrent.{ExecutionContext, Future}
 
 class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
-    implicit ec: ExecutionContext)
-    extends Dao
+    implicit ec: ExecutionContext
+) extends Dao
     with UnitTypeTable
     with UnitTypeParameterTable {
 
@@ -18,16 +18,19 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
     db.run(unitTypes.result)
 
   def getByName(
-      name: String): Future[Option[(UnitType, Seq[UnitTypeParameter])]] =
+      name: String
+  ): Future[Option[(UnitType, Seq[UnitTypeParameter])]] =
     for {
       unitType <- db.run(
-        unitTypes.filter(_.unitTypeName === name).result.headOption)
+                   unitTypes.filter(_.unitTypeName === name).result.headOption
+                 )
       params <- {
         if (unitType.isDefined)
           db.run(
             unitTypeParameters
               .filter(_.unitTypeId === unitType.get.unitTypeId)
-              .result)
+              .result
+          )
         else
           Future.successful(Seq.empty)
       }
@@ -42,5 +45,6 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
     db.run(
       unitTypes returning unitTypes.map(_.unitTypeId)
         into ((unitType, id) => unitType.copy(unitTypeId = Some(id)))
-        += unitType)
+        += unitType
+    )
 }

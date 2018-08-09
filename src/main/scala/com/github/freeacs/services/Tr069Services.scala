@@ -31,20 +31,23 @@ trait Tr069Services {
 
   def getUnitTypeByName(name: String): Future[Option[UnitType]]
 
-  def createUnitTypeParameters(params: Seq[(String, String)],
-                               unitTypeId: Long): Future[Seq[UnitTypeParameter]]
+  def createUnitTypeParameters(
+      params: Seq[(String, String)],
+      unitTypeId: Long
+  ): Future[Seq[UnitTypeParameter]]
 
   def createUnit(userId: String): Future[Unit]
 }
 
 object Tr069Services {
-  def from(dbConfig: DatabaseConfig[JdbcProfile])(
-      implicit ec: ExecutionContext): Tr069Services =
+  def from(
+      dbConfig: DatabaseConfig[JdbcProfile]
+  )(implicit ec: ExecutionContext): Tr069Services =
     new Tr069ServicesImpl(dbConfig)
 
   private[this] class Tr069ServicesImpl(dbConfig: DatabaseConfig[JdbcProfile])(
-      implicit ec: ExecutionContext)
-      extends Tr069Services {
+      implicit ec: ExecutionContext
+  ) extends Tr069Services {
     val unitTypeRepository          = new UnitTypeDao(dbConfig)
     val unitTypeParameterRepository = new UnitTypeParameterDao(dbConfig)
 
@@ -63,15 +66,19 @@ object Tr069Services {
           Some(
             Unit(
               unit.unitId,
-              UnitType(unitType.unitTypeName,
-                       unitType.protocol,
-                       unitType.unitTypeId,
-                       unitType.matcherId,
-                       unitType.vendorName,
-                       unitType.description),
-              Profile(profile.profileName,
-                      profile.unitTypeId,
-                      profile.profileId)
+              UnitType(
+                unitType.unitTypeName,
+                unitType.protocol,
+                unitType.unitTypeId,
+                unitType.matcherId,
+                unitType.vendorName,
+                unitType.description
+              ),
+              Profile(
+                profile.profileName,
+                profile.unitTypeId,
+                profile.profileId
+              )
             )
           )
         case _ =>
@@ -84,22 +91,28 @@ object Tr069Services {
         .map(list => {
           list.map(
             tuple =>
-              UnitParameter(tuple._1.unitId,
-                            UnitTypeParameter(
-                              tuple._2.name,
-                              tuple._2.flags,
-                              tuple._2.unitTypeId,
-                              tuple._2.unitTypeParameterId
-                            ),
-                            tuple._1.value))
+              UnitParameter(
+                tuple._1.unitId,
+                UnitTypeParameter(
+                  tuple._2.name,
+                  tuple._2.flags,
+                  tuple._2.unitTypeId,
+                  tuple._2.unitTypeParameterId
+                ),
+                tuple._1.value
+            )
+          )
         })
 
     def createUnitType(name: String): Future[UnitType] =
       unitTypeRepository
         .save(
-          UnitTypeDTO(unitTypeName = name,
-                      description = Some("Auto generated"),
-                      protocol = "TR069"))
+          UnitTypeDTO(
+            unitTypeName = name,
+            description = Some("Auto generated"),
+            protocol = "TR069"
+          )
+        )
         .map(
           dto =>
             UnitType(
@@ -109,7 +122,8 @@ object Tr069Services {
               dto.matcherId,
               dto.vendorName,
               dto.description
-          ))
+          )
+        )
 
     def createProfile(name: String, unitTypeId: Long): Future[Profile] =
       profileRepository
@@ -117,42 +131,49 @@ object Tr069Services {
         .map(dto => Profile(dto.profileName, dto.unitTypeId, dto.profileId))
 
     def getUnitTypeByName(name: String): Future[Option[UnitType]] =
-      unitTypeRepository
-        .getByName(name)
-        .map {
-          case Some(dto) =>
-            Some(
-              UnitType(
-                dto._1.unitTypeName,
-                dto._1.protocol,
-                dto._1.unitTypeId,
-                dto._1.matcherId,
-                dto._1.vendorName,
-                dto._1.description,
-                params = dto._2.map(p => {
-                  UnitTypeParameter(p.name,
-                                    p.flags,
-                                    p.unitTypeId,
-                                    p.unitTypeParameterId)
-                })
-              ))
-          case _ =>
-            None
-        }
+      unitTypeRepository.getByName(name).map {
+        case Some(dto) =>
+          Some(
+            UnitType(
+              dto._1.unitTypeName,
+              dto._1.protocol,
+              dto._1.unitTypeId,
+              dto._1.matcherId,
+              dto._1.vendorName,
+              dto._1.description,
+              params = dto._2.map(p => {
+                UnitTypeParameter(
+                  p.name,
+                  p.flags,
+                  p.unitTypeId,
+                  p.unitTypeParameterId
+                )
+              })
+            )
+          )
+        case _ =>
+          None
+      }
 
     def createUnitTypeParameters(
         params: Seq[(String, String)],
-        unitTypeId: Long): Future[Seq[UnitTypeParameter]] =
+        unitTypeId: Long
+    ): Future[Seq[UnitTypeParameter]] =
       unitTypeParameterRepository
         .save(
-          params.map(p => unitType.UnitTypeParameter(p._1, p._2, unitTypeId)))
+          params.map(p => unitType.UnitTypeParameter(p._1, p._2, unitTypeId))
+        )
         .map(
           _.map(
             p =>
-              UnitTypeParameter(p.name,
-                                p.flags,
-                                p.unitTypeId,
-                                p.unitTypeParameterId)))
+              UnitTypeParameter(
+                p.name,
+                p.flags,
+                p.unitTypeId,
+                p.unitTypeParameterId
+            )
+          )
+        )
 
     def createUnit(userId: String): Future[Unit] = ???
   }

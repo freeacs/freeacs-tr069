@@ -9,13 +9,14 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object ConversationActor {
   def props(user: String, services: Tr069Services)(
-      implicit ec: ExecutionContext): Props =
+      implicit ec: ExecutionContext
+  ): Props =
     Props(new ConversationActor(user, services))
 }
 
 class ConversationActor(user: String, services: Tr069Services)(
-    implicit ec: ExecutionContext)
-    extends Actor
+    implicit ec: ExecutionContext
+) extends Actor
     with FSM[ConversationState, ConversationData]
     with ActorLogging {
 
@@ -43,12 +44,15 @@ class ConversationActor(user: String, services: Tr069Services)(
                 case None =>
                   for {
                     unitType <- services.createUnitType(unitTypeName)
-                    profile <- services.createProfile("Default",
-                                                      unitType.unitTypeId.get)
+                    profile <- services.createProfile(
+                                "Default",
+                                unitType.unitTypeId.get
+                              )
                     unit <- services.createUnit(user)
                     params <- services.createUnitTypeParameters(
-                      Seq(("System.Test", "RW")),
-                      unitType.unitTypeId.get)
+                               Seq(("System.Test", "RW")),
+                               unitType.unitTypeId.get
+                             )
                   } yield unitType.copy(params = params)
               }
               .map(ut => newConversationState.copy(unitType = Some(ut)))
@@ -58,11 +62,13 @@ class ConversationActor(user: String, services: Tr069Services)(
             log.error(s"Failed to retrieve unit params {}", e)
             newConversationState.copy(exception = Some(e))
         }
-        .map(state =>
-          if (state.exception.isEmpty)
-            GoTo(ExpectEmptyRequest, state)
-          else
-            GoTo(Failed, state)) pipeTo self
+        .map(
+          state =>
+            if (state.exception.isEmpty)
+              GoTo(ExpectEmptyRequest, state)
+            else
+              GoTo(Failed, state)
+        ) pipeTo self
       log.info("Got Inform. Returning InformResponse")
       goto(ExpectGoTo) replying (response)
     case Event(request, stateData) =>
@@ -88,7 +94,8 @@ class ConversationActor(user: String, services: Tr069Services)(
   when(ExpectGetParameterNamesResponse) {
     case Event(req: GetParameterNamesResponse, stateData) =>
       log.info(
-        "Got GetParameterNamesResponse. Returning SetParameterValuesRequest")
+        "Got GetParameterNamesResponse. Returning SetParameterValuesRequest"
+      )
       val response = SetParameterValuesRequest()
       val newConversationState =
         stateData.copy(history = stateData.history :+ (req, response))
@@ -114,23 +121,29 @@ class ConversationActor(user: String, services: Tr069Services)(
 
   onTransition {
     case state -> Failed =>
-      log.error("Conversation failure occurred from state {} with data {}",
-                state,
-                nextStateData)
+      log.error(
+        "Conversation failure occurred from state {} with data {}",
+        state,
+        nextStateData
+      )
       self ! PoisonPill
     case state -> Complete =>
-      log.info(s"Conversation completed from state {} with data {}",
-               state,
-               nextStateData)
+      log.info(
+        s"Conversation completed from state {} with data {}",
+        state,
+        nextStateData
+      )
       self ! PoisonPill
   }
 
   whenUnhandled {
     case Event(e, s) ⇒
-      log.warning("received unhandled request {} in state {}/{}",
-                  e,
-                  stateName,
-                  s)
+      log.warning(
+        "received unhandled request {} in state {}/{}",
+        e,
+        stateName,
+        s
+      )
       self ! PoisonPill
       stay replying (InvalidRequest)
   }
