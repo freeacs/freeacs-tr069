@@ -40,9 +40,9 @@ class Routes(breaker: CircuitBreaker,
       path("tr069") {
         logRequestResult("tr069") {
           extractClientIP { remoteIp =>
-            authenticateConversation(remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown"), (u) =>
+            authenticateConversation(remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown"), (username) =>
               entity(as[SOAPRequest]) { soapRequest =>
-                complete(handle(soapRequest, u))
+                complete(handle(soapRequest, username))
               })
           }
         }
