@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.github.freeacs;
+package com.github.freeacs.util;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.binary.StringUtils;

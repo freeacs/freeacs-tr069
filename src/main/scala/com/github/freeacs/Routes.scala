@@ -15,6 +15,7 @@ import akka.util.{ByteString, Timeout}
 import com.github.freeacs.actors.ConversationActor
 import com.github.freeacs.config.Configuration
 import com.github.freeacs.services.{AuthenticationService, Tr069Services}
+import com.github.freeacs.util.DigestUtils
 import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
 import org.slf4j.LoggerFactory
@@ -39,7 +40,7 @@ class Routes(breaker: CircuitBreaker,
       path("tr069") {
         logRequestResult("tr069") {
           extractClientIP { remoteIp =>
-            authenticateConversation(remoteIp.toString(), (u) =>
+            authenticateConversation(remoteIp.toIP.map(_.ip.getHostAddress).get, (u) =>
               entity(as[SOAPRequest]) { soapRequest =>
                 complete(handle(soapRequest, u))
               })
@@ -68,14 +69,7 @@ class Routes(breaker: CircuitBreaker,
             }
           case "Digest" =>
             val username = username2unitId(credentials.params("username"))
-            val nonce = credentials.params("nonce")
-            val nc = credentials.params("nc")
-            val cnonce = credentials.params("cnonce")
-            val qop = credentials.params("qop")
-            val uri = credentials.params("uri")
-            val response = credentials.params("response")
-            val method = "POST"
-            onComplete(authService.authenticator(username, verifyDigest(username, method, uri, nonce, nc, cnonce, qop, response))) {
+            onComplete(authService.authenticator(username, verifyDigest(username, credentials.params))) {
               case Success(Right((_, _))) =>
                 route(username)
               case Success(Left(_)) =>
@@ -91,7 +85,14 @@ class Routes(breaker: CircuitBreaker,
           complete(unauthorizedDigest(remoteIp))
     }
 
-  def verifyDigest(username: String, method: String, uri: String, nonce: String, nc: String, cnonce: String, qop: String, response: String)(secret: String): Boolean = {
+  def verifyDigest(username: String, params: Map[String, String])(secret: String): Boolean = {
+    val nonce = params("nonce")
+    val nc = params("nc")
+    val cnonce = params("cnonce")
+    val qop = params("qop")
+    val uri = params("uri")
+    val response = params("response")
+    val method = "POST"
     val sharedSecret = {
       if (secret != null && secret.length > 16 && !(passwordMd5(username, secret, method, uri, nonce, nc, cnonce, qop) == response))
         secret.substring(0, 16)
@@ -102,14 +103,11 @@ class Routes(breaker: CircuitBreaker,
   }
 
   def passwordMd5(username: String, password: String, method: String, uri: String, nonce: String, nc: String, cnonce: String, qop: String): String = {
-    val realm = configuration.digestRealm
-    val a1 = username + ":" + realm + ":" + password
+    val a1 = s"$username:${configuration.digestRealm}:$password"
     val md5a1 = DigestUtils.md5Hex(a1)
-    val a2 = method + ":" + uri
+    val a2 = s"$method:$uri"
     val md5a2 = DigestUtils.md5Hex(a2)
-    val a3 = md5a1 + ":" + nonce + ":" + nc + ":" + cnonce + ":" + qop + ":" + md5a2
-    val md5a3 = DigestUtils.md5Hex(a3)
-    md5a3
+    DigestUtils.md5Hex(s"$md5a1:$nonce:$nc:$cnonce:$qop:$md5a2")
   }
 
   /**
@@ -127,10 +125,13 @@ class Routes(breaker: CircuitBreaker,
     }
   }
 
-  private def getDigestHeader(nonce: String): RawHeader = {
-    val realm = configuration.digestRealm
-    val authenticateHeader = "Digest realm=\"" + realm + "\", " + "qop=\"" + configuration.digestQop + "\", nonce=\"" + nonce + "\", " + "opaque=\"" + DigestUtils.md5Hex(nonce) + "\""
-    RawHeader("WWW-Authenticate", authenticateHeader)
+  private def getDigestHeader(remoteIp: String): RawHeader = {
+    val realm: String = configuration.digestRealm
+    val qop = configuration.digestQop
+    val nonce = DigestUtils.md5Hex(s"$remoteIp:${System.currentTimeMillis}:${configuration.digestSecret}")
+    val opaque = DigestUtils.md5Hex(nonce)
+    val authHeader = s"""Digest realm="$realm", qop="$qop", nonce="$nonce", opaque="$opaque""""
+    RawHeader("WWW-Authenticate", authHeader)
   }
 
   def decodeBasicAuth(authHeader: String) = {
@@ -140,18 +141,18 @@ class Routes(breaker: CircuitBreaker,
     (user, password)
   }
 
-  def unauthorizedBasic =
+  def unauthorizedBasic = {
+    val realm = configuration.basicRealm
     HttpResponse(
       status = StatusCodes.Unauthorized,
-      headers = immutable.Seq(RawHeader("WWW-Authenticate", s"""Basic realm="${configuration.basicRealm}""""))
+      headers = immutable.Seq(RawHeader("WWW-Authenticate", s"""Basic realm="$realm""""))
     )
+  }
 
   def unauthorizedDigest(remoteIp: String) = {
-    log.warn("Unauthorized")
-    val now = System.currentTimeMillis
     HttpResponse(
       status = StatusCodes.Unauthorized,
-      headers = immutable.Seq(getDigestHeader(DigestUtils.md5Hex(remoteIp + ":" + now + ":" + configuration.digestSecret)))
+      headers = immutable.Seq(getDigestHeader(remoteIp))
     )
   }
 
