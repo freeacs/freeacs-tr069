@@ -17,7 +17,6 @@ import com.github.freeacs.config.Configuration
 import com.github.freeacs.services.{AuthenticationService, Tr069Services}
 import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
-import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.LoggerFactory
 
 import scala.collection.immutable
@@ -36,18 +35,20 @@ class Routes(breaker: CircuitBreaker,
   val log = LoggerFactory.getLogger(getClass)
 
   def routes: Route =
-    logRequestResult("dsdd") {
-      post {
-        path("tr069") {
-          authenticateConversation((u) =>
-            entity(as[SOAPRequest]) { soapRequest =>
-              complete(handle(soapRequest, u))
-            })
+    post {
+      path("tr069") {
+        logRequestResult("tr069") {
+          extractClientIP { remoteIp =>
+            authenticateConversation(remoteIp.toString(), (u) =>
+              entity(as[SOAPRequest]) { soapRequest =>
+                complete(handle(soapRequest, u))
+              })
+          }
         }
       }
     }
 
-  def authenticateConversation(route: (String) => Route) =
+  def authenticateConversation(remoteIp: String, route: (String) => Route) =
     extractCredentials {
       case Some(credentials) =>
         def failed(e: Throwable) = {
@@ -78,7 +79,7 @@ class Routes(breaker: CircuitBreaker,
               case Success(Right((_, _))) =>
                 route(username)
               case Success(Left(_)) =>
-                complete(unauthorizedDigest)
+                complete(unauthorizedDigest(remoteIp))
               case Failure(e) =>
                 complete(failed(e))
             }
@@ -87,10 +88,10 @@ class Routes(breaker: CircuitBreaker,
         if (configuration.authMethod.toLowerCase.equals("basic"))
           complete(unauthorizedBasic)
         else
-          complete(unauthorizedDigest)
+          complete(unauthorizedDigest(remoteIp))
     }
 
-  def verifyDigest(username: String, method: String, uri: String, nonce: String, nc: String, cnonce: String, qop: String, response: String)(secret: String):  Boolean = {
+  def verifyDigest(username: String, method: String, uri: String, nonce: String, nc: String, cnonce: String, qop: String, response: String)(secret: String): Boolean = {
     val sharedSecret = {
       if (secret != null && secret.length > 16 && !(passwordMd5(username, secret, method, uri, nonce, nc, cnonce, qop) == response))
         secret.substring(0, 16)
@@ -142,15 +143,15 @@ class Routes(breaker: CircuitBreaker,
   def unauthorizedBasic =
     HttpResponse(
       status = StatusCodes.Unauthorized,
-      headers = immutable.Seq(RawHeader("WWW-Authenticate",  s"""Basic realm="${configuration.basicRealm}""""))
+      headers = immutable.Seq(RawHeader("WWW-Authenticate", s"""Basic realm="${configuration.basicRealm}""""))
     )
 
-  def unauthorizedDigest = {
+  def unauthorizedDigest(remoteIp: String) = {
     log.warn("Unauthorized")
     val now = System.currentTimeMillis
     HttpResponse(
       status = StatusCodes.Unauthorized,
-      headers = immutable.Seq(getDigestHeader(DigestUtils.md5Hex("freeacs" + ":" + now + ":" + configuration.digestSecret)))
+      headers = immutable.Seq(getDigestHeader(DigestUtils.md5Hex(remoteIp + ":" + now + ":" + configuration.digestSecret)))
     )
   }
 
