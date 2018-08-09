@@ -35,27 +35,7 @@ class ConversationActor(user: String, services: Tr069Services)(
           case Some(unit) =>
             Future.successful(newConversationState.copy(unit = Some(unit)))
           case _ =>
-            val unitTypeName = request.deviceId.productClass
-            services
-              .getUnitTypeByName(unitTypeName)
-              .flatMap {
-                case Some(ut) =>
-                  Future.successful(ut)
-                case None =>
-                  for {
-                    unitType <- services.createUnitType(unitTypeName)
-                    profile <- services.createProfile(
-                                "Default",
-                                unitType.unitTypeId.get
-                              )
-                    unit <- services.createUnit(user)
-                    params <- services.createUnitTypeParameters(
-                               Seq(("System.Test", "RW")),
-                               unitType.unitTypeId.get
-                             )
-                  } yield unitType.copy(params = params)
-              }
-              .map(ut => newConversationState.copy(unitType = Some(ut)))
+            Future.successful(newConversationState)
         }
         .recover {
           case e =>
