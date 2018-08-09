@@ -12,25 +12,30 @@ import scala.concurrent.duration.FiniteDuration
 
 class AppSpec extends WordSpec with Matchers with ScalatestRouteTest {
   val authenticationService = new DummyAuthenticationService()
-  val duration = FiniteDuration(1, TimeUnit.SECONDS)
-  val breaker = new CircuitBreaker(system.scheduler, 1,  duration,  duration)
-  val responseTimeout = FiniteDuration(1, TimeUnit.SECONDS)
-  val actorTimeout = FiniteDuration(1, TimeUnit.SECONDS)
-  val routes = new Routes(breaker ,null, authenticationService, new Configuration {
-    val dbConfig = null
-    val responseTimeout: FiniteDuration = FiniteDuration(1, TimeUnit.SECONDS)
-    val actorTimeout: FiniteDuration = FiniteDuration(1, TimeUnit.SECONDS)
-    val maxFailures: Int = 1
-    val callTimeout: FiniteDuration = FiniteDuration(1, TimeUnit.SECONDS)
-    val resetTimeout: FiniteDuration = FiniteDuration(1, TimeUnit.SECONDS)
-    val hostname: String = "test"
-    val port: Int = -1
-    val authMethod: String = "basic"
-    val digestRealm: String = "test"
-    val digestQop: String = "test"
-    val digestSecret: String = "test"
-    val basicRealm: String = "test"
-  }).routes
+  val duration              = FiniteDuration(1, TimeUnit.SECONDS)
+  val breaker               = new CircuitBreaker(system.scheduler, 1, duration, duration)
+  val responseTimeout       = FiniteDuration(1, TimeUnit.SECONDS)
+  val actorTimeout          = FiniteDuration(1, TimeUnit.SECONDS)
+  val routes = new Routes(
+    breaker,
+    null,
+    authenticationService,
+    new Configuration {
+      val dbConfig                        = null
+      val responseTimeout: FiniteDuration = FiniteDuration(1, TimeUnit.SECONDS)
+      val actorTimeout: FiniteDuration    = FiniteDuration(1, TimeUnit.SECONDS)
+      val maxFailures: Int                = 1
+      val callTimeout: FiniteDuration     = FiniteDuration(1, TimeUnit.SECONDS)
+      val resetTimeout: FiniteDuration    = FiniteDuration(1, TimeUnit.SECONDS)
+      val hostname: String                = "test"
+      val port: Int                       = -1
+      val authMethod: String              = "basic"
+      val digestRealm: String             = "test"
+      val digestQop: String               = "test"
+      val digestSecret: String            = "test"
+      val basicRealm: String              = "test"
+    }
+  ).routes
 
   "The server" should {
     "return 401 Unauthorized on a POST to /tr069 without any authorization" in {

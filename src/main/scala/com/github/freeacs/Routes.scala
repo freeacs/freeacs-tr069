@@ -1,26 +1,21 @@
 package com.github.freeacs
 
-import java.io.UnsupportedEncodingException
-import java.net.URLDecoder
-
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.{ask, CircuitBreaker, CircuitBreakerOpenException}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.{ByteString, Timeout}
 import com.github.freeacs.actors.ConversationActor
+import com.github.freeacs.auth.{BasicAuthorization, DigestAuthorization}
 import com.github.freeacs.config.Configuration
 import com.github.freeacs.services.{AuthenticationService, Tr069Services}
-import com.github.freeacs.util.DigestUtils
 import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
 import org.slf4j.LoggerFactory
 
-import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
@@ -65,130 +60,59 @@ class Routes(
         }
         credentials.scheme() match {
           case "Basic" =>
-            val (username, password) = decodeBasicAuth(credentials.token())
-            val verifier: Verifier   = _.equals(password)
+            val (username, password) =
+              BasicAuthorization.decodeBasicAuth(credentials.token())
+            val verifier: Verifier = _.equals(password)
             onComplete(authService.authenticator(username, verifier)) {
               case Success(Right(_)) =>
                 route(username)
               case Success(Left(_)) =>
-                complete(unauthorizedBasic)
+                complete(
+                  BasicAuthorization.unauthorizedBasic(configuration.basicRealm)
+                )
               case Failure(e) =>
                 complete(failed(e))
             }
           case "Digest" =>
-            val username           = username2unitId(credentials.params("username"))
-            val verifier: Verifier = verifyDigest(username, credentials.params)
+            val username = DigestAuthorization.username2unitId(
+              credentials.params("username")
+            )
+            val verifier: Verifier = DigestAuthorization.verifyDigest(
+              username,
+              credentials.params,
+              configuration.digestRealm
+            )
             onComplete(authService.authenticator(username, verifier)) {
               case Success(Right((_, _))) =>
                 route(username)
               case Success(Left(_)) =>
-                complete(unauthorizedDigest(remoteIp))
+                complete(
+                  DigestAuthorization.unauthorizedDigest(
+                    remoteIp,
+                    configuration.digestRealm,
+                    configuration.digestQop,
+                    configuration.digestSecret
+                  )
+                )
               case Failure(e) =>
                 complete(failed(e))
             }
         }
       case None =>
         if (configuration.authMethod.toLowerCase.equals("basic"))
-          complete(unauthorizedBasic)
+          complete(
+            BasicAuthorization.unauthorizedBasic(configuration.basicRealm)
+          )
         else
-          complete(unauthorizedDigest(remoteIp))
+          complete(
+            DigestAuthorization.unauthorizedDigest(
+              remoteIp,
+              configuration.digestRealm,
+              configuration.digestQop,
+              configuration.digestSecret
+            )
+          )
     }
-
-  def verifyDigest(username: String, params: Map[String, String])(
-      secret: String
-  ): Boolean = {
-    val nonce    = params("nonce")
-    val nc       = params("nc")
-    val cnonce   = params("cnonce")
-    val qop      = params("qop")
-    val uri      = params("uri")
-    val response = params("response")
-    val method   = "POST"
-    val sharedSecret = {
-      if (secret != null && secret.length > 16 && !(passwordMd5(
-            username,
-            secret,
-            method,
-            uri,
-            nonce,
-            nc,
-            cnonce,
-            qop
-          ) == response))
-        secret.substring(0, 16)
-      else
-        secret
-    }
-    passwordMd5(username, sharedSecret, method, uri, nonce, nc, cnonce, qop)
-      .equals(response)
-  }
-
-  def passwordMd5(
-      username: String,
-      password: String,
-      method: String,
-      uri: String,
-      nonce: String,
-      nc: String,
-      cnonce: String,
-      qop: String
-  ): String = {
-    val a1    = s"$username:${configuration.digestRealm}:$password"
-    val md5a1 = DigestUtils.md5Hex(a1)
-    val a2    = s"$method:$uri"
-    val md5a2 = DigestUtils.md5Hex(a2)
-    DigestUtils.md5Hex(s"$md5a1:$nonce:$nc:$cnonce:$qop:$md5a2")
-  }
-
-  /**
-   * Convert the authentication username to unitid (should be 1:1, but there might be some
-   * vendor specific problems to solve...
-   *
-   * @throws UnsupportedEncodingException thrown if url decoding fails
-   */
-  def username2unitId(username: String): String = {
-    try URLDecoder.decode(username, "UTF-8")
-    catch {
-      case _: UnsupportedEncodingException =>
-        username
-    }
-  }
-
-  private def getDigestHeader(remoteIp: String): RawHeader = {
-    val realm: String = configuration.digestRealm
-    val qop           = configuration.digestQop
-    val nonce = DigestUtils.md5Hex(
-      s"$remoteIp:${System.currentTimeMillis}:${configuration.digestSecret}"
-    )
-    val opaque = DigestUtils.md5Hex(nonce)
-    val authHeader =
-      s"""Digest realm="$realm", qop="$qop", nonce="$nonce", opaque="$opaque""""
-    RawHeader("WWW-Authenticate", authHeader)
-  }
-
-  def decodeBasicAuth(authHeader: String) = {
-    val baStr                 = authHeader.replaceFirst("Basic ", "")
-    val decoded               = new sun.misc.BASE64Decoder().decodeBuffer(baStr)
-    val Array(user, password) = new String(decoded).split(":")
-    (user, password)
-  }
-
-  def unauthorizedBasic = {
-    val realm = configuration.basicRealm
-    HttpResponse(
-      status = StatusCodes.Unauthorized,
-      headers = immutable.Seq(
-        RawHeader("WWW-Authenticate", s"""Basic realm="$realm"""")
-      )
-    )
-  }
-
-  def unauthorizedDigest(remoteIp: String) = {
-    HttpResponse(
-      status = StatusCodes.Unauthorized,
-      headers = immutable.Seq(getDigestHeader(remoteIp))
-    )
-  }
 
   def handle(
       soapRequest: SOAPRequest,

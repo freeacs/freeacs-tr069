@@ -29,7 +29,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.freeacs.util
+package com.github.freeacs.auth
 
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.binary.StringUtils
