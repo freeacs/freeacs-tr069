@@ -17,6 +17,11 @@ trait Configuration {
   val resetTimeout: FiniteDuration
   val hostname: String
   val port: Int
+  val authMethod: String
+  val digestRealm: String
+  val digestQop: String
+  val digestSecret: String
+  val basicRealm: String
 
 }
 
@@ -35,6 +40,10 @@ object Configuration {
     val resetTimeout: FiniteDuration = serverConfig.getDuration("circuit-breaker.resetTimeout").toMillis millis
     val hostname: String = serverConfig.getString("http.host")
     val port: Int = serverConfig.getInt("http.port")
-
+    val basicRealm: String = serverConfig.getString("auth.basic.realm")
+    val digestRealm: String = serverConfig.getString("auth.digest.realm")
+    val digestQop: String = serverConfig.getString("auth.digest.qop")
+    val digestSecret: String = serverConfig.getString("auth.digest.secret")
+    val authMethod: String = serverConfig.getString("auth.method")
   }
 }

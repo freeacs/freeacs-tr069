@@ -3,7 +3,7 @@ package com.github.freeacs.services
 import scala.concurrent.{ExecutionContext, Future}
 
 trait AuthenticationService {
-  def authenticator(user: String, pass: String): Future[Either[Unit, Unit]]
+  def authenticator(user: String, verify: (String) => Boolean): Future[Either[String, (String, String)]]
 }
 
 object AuthenticationService {
@@ -12,13 +12,13 @@ object AuthenticationService {
 
   private[this] class AuthenticationServiceImpl(services: Tr069Services)(implicit ex: ExecutionContext) extends AuthenticationService {
 
-    def authenticator(user: String, pass: String): Future[Either[Unit, Unit]] =
+    def authenticator(user: String, verify: (String) => Boolean): Future[Either[String, (String, String)]] =
       services.getUnitSecret(user)
         .map {
-          case Some(secret) if pass.equals(secret) =>
-            Right()
+          case Some(secret) if verify(secret) =>
+            Right((user, secret))
           case _ =>
-            Left()
+            Left("Wrong username and/or password")
         }
   }
 }

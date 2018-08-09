@@ -24,7 +24,7 @@ trait Server {
   val breaker = new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
   val services = Tr069Services.from(dbConfig)
   val authService = AuthenticationService.from(services)
-  val routes = new Routes(breaker, services, authService, responseTimeout, actorTimeout)
+  val routes = new Routes(breaker, services, authService, configuration)
 
   val server = Http().bindAndHandle(routes.routes, hostname, port)
   StdIn.readLine()

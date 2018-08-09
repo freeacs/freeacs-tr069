@@ -1,5 +1,8 @@
 package com.github.freeacs
 
+import java.io.UnsupportedEncodingException
+import java.net.URLDecoder
+
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
 import akka.http.scaladsl.model._
@@ -10,12 +13,14 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.{ByteString, Timeout}
 import com.github.freeacs.actors.ConversationActor
+import com.github.freeacs.config.Configuration
 import com.github.freeacs.services.{AuthenticationService, Tr069Services}
 import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
+import org.apache.commons.codec.digest.DigestUtils
+import org.slf4j.LoggerFactory
 
 import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
@@ -24,47 +29,108 @@ import scala.xml.NodeSeq
 class Routes(breaker: CircuitBreaker,
              services: Tr069Services,
              authService: AuthenticationService,
-             responseTimeout: FiniteDuration,
-             actorTimeout: FiniteDuration)
+             configuration: Configuration)
             (implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
   extends Directives {
 
+  val log = LoggerFactory.getLogger(getClass)
+
   def routes: Route =
-    post {
-      path("tr069") {
-        authenticateConversation((u, p) =>
-          entity(as[SOAPRequest]) { soapRequest =>
-            complete(handle(soapRequest, u, p))
-          })
+    logRequestResult("dsdd") {
+      post {
+        path("tr069") {
+          authenticateConversation((u) =>
+            entity(as[SOAPRequest]) { soapRequest =>
+              complete(handle(soapRequest, u))
+            })
+        }
       }
     }
 
-  def authenticateConversation(route: (String, String) => Route) =
+  def authenticateConversation(route: (String) => Route) =
     extractCredentials {
       case Some(credentials) =>
+        def failed(e: Throwable) = {
+          log.error("Failed to retrieve/check user secret", e)
+          HttpResponse(StatusCodes.InternalServerError).withEntity("Failed to retrieve/check user secret")
+        }
         credentials.scheme() match {
           case "Basic" =>
             val (username, password) = decodeBasicAuth(credentials.token())
-            authenticate(username, password, route)
+            onComplete(authService.authenticator(username, _.equals(password))) {
+              case Success(Right(_)) =>
+                route(username)
+              case Success(Left(_)) =>
+                complete(unauthorizedBasic)
+              case Failure(e) =>
+                complete(failed(e))
+            }
           case "Digest" =>
-            val username = credentials.params("username")
-            val password = credentials.params("response")
-            // TODO make shit work
-            authenticate(username, password, route)
+            val username = username2unitId(credentials.params("username"))
+            val nonce = credentials.params("nonce")
+            val nc = credentials.params("nc")
+            val cnonce = credentials.params("cnonce")
+            val qop = credentials.params("qop")
+            val uri = credentials.params("uri")
+            val response = credentials.params("response")
+            val method = "POST"
+            onComplete(authService.authenticator(username, verifyDigest(username, method, uri, nonce, nc, cnonce, qop, response))) {
+              case Success(Right((_, _))) =>
+                route(username)
+              case Success(Left(_)) =>
+                complete(unauthorizedDigest)
+              case Failure(e) =>
+                complete(failed(e))
+            }
         }
       case None =>
-        complete(unauthorized)
+        if (configuration.authMethod.toLowerCase.equals("basic"))
+          complete(unauthorizedBasic)
+        else
+          complete(unauthorizedDigest)
     }
 
-  def authenticate(username: String, password: String, route: (String, String) => Route) =
-    onComplete(authService.authenticator(username, password)) {
-      case Success(Right(_)) =>
-        route(username, password)
-      case Success(Left(_)) =>
-        complete(unauthorized)
-      case Failure(_) =>
-        complete(StatusCodes.InternalServerError)
+  def verifyDigest(username: String, method: String, uri: String, nonce: String, nc: String, cnonce: String, qop: String, response: String)(secret: String):  Boolean = {
+    val sharedSecret = {
+      if (secret != null && secret.length > 16 && !(passwordMd5(username, secret, method, uri, nonce, nc, cnonce, qop) == response))
+        secret.substring(0, 16)
+      else
+        secret
     }
+    passwordMd5(username, sharedSecret, method, uri, nonce, nc, cnonce, qop).equals(response)
+  }
+
+  def passwordMd5(username: String, password: String, method: String, uri: String, nonce: String, nc: String, cnonce: String, qop: String): String = {
+    val realm = configuration.digestRealm
+    val a1 = username + ":" + realm + ":" + password
+    val md5a1 = DigestUtils.md5Hex(a1)
+    val a2 = method + ":" + uri
+    val md5a2 = DigestUtils.md5Hex(a2)
+    val a3 = md5a1 + ":" + nonce + ":" + nc + ":" + cnonce + ":" + qop + ":" + md5a2
+    val md5a3 = DigestUtils.md5Hex(a3)
+    md5a3
+  }
+
+  /**
+    * Convert the authentication username to unitid (should be 1:1, but there might be some
+    * vendor specific problems to solve...
+    *
+    * @throws UnsupportedEncodingException thrown if url decoding fails
+    */
+  def username2unitId(username: String): String = {
+    try
+      URLDecoder.decode(username, "UTF-8")
+    catch {
+      case _: UnsupportedEncodingException =>
+        username
+    }
+  }
+
+  private def getDigestHeader(nonce: String): RawHeader = {
+    val realm = configuration.digestRealm
+    val authenticateHeader = "Digest realm=\"" + realm + "\", " + "qop=\"" + configuration.digestQop + "\", nonce=\"" + nonce + "\", " + "opaque=\"" + DigestUtils.md5Hex(nonce) + "\""
+    RawHeader("WWW-Authenticate", authenticateHeader)
+  }
 
   def decodeBasicAuth(authHeader: String) = {
     val baStr = authHeader.replaceFirst("Basic ", "")
@@ -73,14 +139,23 @@ class Routes(breaker: CircuitBreaker,
     (user, password)
   }
 
-  def unauthorized =
+  def unauthorizedBasic =
     HttpResponse(
       status = StatusCodes.Unauthorized,
-      headers = immutable.Seq(RawHeader("WWW-Authenticate", "Basic realm=\"auth@freeacs.com\""))
+      headers = immutable.Seq(RawHeader("WWW-Authenticate",  s"""Basic realm="${configuration.basicRealm}""""))
     )
 
-  def handle(soapRequest: SOAPRequest, user: String, pass: String): Future[ToResponseMarshallable] = {
-    implicit val timeout: Timeout = actorTimeout
+  def unauthorizedDigest = {
+    log.warn("Unauthorized")
+    val now = System.currentTimeMillis
+    HttpResponse(
+      status = StatusCodes.Unauthorized,
+      headers = immutable.Seq(getDigestHeader(DigestUtils.md5Hex("freeacs" + ":" + now + ":" + configuration.digestSecret)))
+    )
+  }
+
+  def handle(soapRequest: SOAPRequest, user: String): Future[ToResponseMarshallable] = {
+    implicit val timeout: Timeout = configuration.responseTimeout
     breaker.withCircuitBreaker(
       getConversationActor(user).flatMap(_ ? soapRequest)
     ).map(_.asInstanceOf[SOAPResponse])
@@ -112,7 +187,7 @@ class Routes(breaker: CircuitBreaker,
 
   def getConversationActor(user: String): Future[ActorRef] =
     system.actorSelection(s"user/conversation-$user")
-      .resolveOne(actorTimeout)
+      .resolveOne(configuration.actorTimeout)
       .recover { case _: Exception =>
         system.actorOf(ConversationActor.props(user, services), s"conversation-$user")
       }

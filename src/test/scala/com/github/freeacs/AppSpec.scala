@@ -14,7 +14,7 @@ class AppSpec extends WordSpec with Matchers with ScalatestRouteTest {
   val breaker = new CircuitBreaker(system.scheduler, 1,  duration,  duration)
   val responseTimeout = FiniteDuration(1, TimeUnit.SECONDS)
   val actorTimeout = FiniteDuration(1, TimeUnit.SECONDS)
-  val routes = new Routes(breaker ,null, authenticationService, responseTimeout, actorTimeout).routes
+  val routes = new Routes(breaker ,null, authenticationService, null).routes
 
   "The session actor" should {
     "return Invalid request on a POST to /tr069 without any body" in {
