@@ -51,9 +51,6 @@ class ConversationActor(user: String, services: Tr069Services)(
         ) pipeTo self
       log.info("Got Inform. Returning InformResponse")
       goto(ExpectGoTo) replying (response)
-    case Event(request, stateData) =>
-      log.error("Expecting inform but got {}. Data: {}", request, stateData)
-      goto(Failed) replying (InvalidRequest)
   }
 
   when(ExpectGoTo) {
@@ -117,6 +114,8 @@ class ConversationActor(user: String, services: Tr069Services)(
   }
 
   whenUnhandled {
+    case Event(NonceCount(nc), stateData) =>
+      stay() using (stateData.copy(nc = Some(nc)))
     case Event(e, s) ⇒
       log.warning(
         "received unhandled request {} in state {}/{}",

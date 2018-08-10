@@ -9,7 +9,7 @@ import akka.pattern.{ask, CircuitBreaker, CircuitBreakerOpenException}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.{ByteString, Timeout}
-import com.github.freeacs.actors.ConversationActor
+import com.github.freeacs.actors.{ConversationActor, NonceCount}
 import com.github.freeacs.auth.{BasicAuthorization, DigestAuthorization}
 import com.github.freeacs.config.Configuration
 import com.github.freeacs.services.{AuthenticationService, Tr069Services}
@@ -44,9 +44,9 @@ class Routes(
             extractClientIP { remoteIp =>
               authenticateConversation(
                 remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown"),
-                (username) =>
+                (username, actor) =>
                   entity(as[SOAPRequest]) { soapRequest =>
-                    complete(handle(soapRequest, username))
+                    complete(handle(soapRequest, username, actor))
                 }
               )
             }
@@ -56,7 +56,10 @@ class Routes(
 
   type Verifier = String => Boolean
 
-  def authenticateConversation(remoteIp: String, route: (String) => Route) =
+  def authenticateConversation(
+      remoteIp: String,
+      route: (String, ActorRef) => Route
+  ) =
     extractCredentials {
       case Some(credentials) =>
         def failed(e: Throwable) = {
@@ -71,7 +74,14 @@ class Routes(
             val verifier: Verifier = _.equals(password)
             onComplete(authService.authenticator(username, verifier)) {
               case Success(Right(_)) =>
-                route(username)
+                onComplete(getConversationActor(username)) {
+                  case Success(actor) =>
+                    route(username, actor)
+                  case Failure(_) =>
+                    complete(
+                      HttpResponse(StatusCodes.InternalServerError)
+                    )
+                }
               case Success(Left(_)) =>
                 complete(
                   BasicAuthorization.unauthorizedBasic(configuration.basicRealm)
@@ -83,25 +93,31 @@ class Routes(
             val username = DigestAuthorization.username2unitId(
               credentials.params("username")
             )
-            val verifier: Verifier = DigestAuthorization.verifyDigest(
-              username,
-              credentials.params,
-              configuration.digestRealm
-            )
-            onComplete(authService.authenticator(username, verifier)) {
-              case Success(Right((_, _))) =>
-                route(username)
-              case Success(Left(_)) =>
-                complete(
-                  DigestAuthorization.unauthorizedDigest(
-                    remoteIp,
-                    configuration.digestRealm,
-                    configuration.digestQop,
-                    configuration.digestSecret
-                  )
+            onComplete(getConversationActor(username)) {
+              case Success(actor) =>
+                actor ! NonceCount(nc = credentials.params("nc"))
+                val verifier: Verifier = DigestAuthorization.verifyDigest(
+                  username,
+                  credentials.params,
+                  configuration.digestRealm
                 )
-              case Failure(e) =>
-                complete(failed(e))
+                onComplete(authService.authenticator(username, verifier)) {
+                  case Success(Right((_, _))) =>
+                    route(username, actor)
+                  case Success(Left(_)) =>
+                    complete(
+                      DigestAuthorization.unauthorizedDigest(
+                        remoteIp,
+                        configuration.digestRealm,
+                        configuration.digestQop,
+                        configuration.digestSecret
+                      )
+                    )
+                  case Failure(e) =>
+                    complete(failed(e))
+                }
+              case Failure(exception) =>
+                complete(failed(exception))
             }
         }
       case None =>
@@ -122,12 +138,13 @@ class Routes(
 
   def handle(
       soapRequest: SOAPRequest,
-      user: String
+      user: String,
+      actor: ActorRef
   ): Future[ToResponseMarshallable] = {
     implicit val timeout: Timeout = configuration.responseTimeout
     breaker
       .withCircuitBreaker(
-        getConversationActor(user).flatMap(_ ? soapRequest)
+        actor ? soapRequest
       )
       .map(_.asInstanceOf[SOAPResponse])
       .map[ToResponseMarshallable] { response =>
