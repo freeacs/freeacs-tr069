@@ -1,7 +1,6 @@
 package com.github.freeacs
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.http.caching.scaladsl.Cache
 import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model._
@@ -10,7 +9,7 @@ import akka.pattern.{ask, CircuitBreaker, CircuitBreakerOpenException}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.{ByteString, Timeout}
-import com.github.freeacs.actors.{ConversationActor, NonceCount}
+import com.github.freeacs.actors.{ConversationActor, NonceActor, NonceCount}
 import com.github.freeacs.auth.{BasicAuthorization, DigestAuthorization}
 import com.github.freeacs.config.Configuration
 import com.github.freeacs.services.{AuthenticationService, Tr069Services}
@@ -27,8 +26,7 @@ class Routes(
     breaker: CircuitBreaker,
     services: Tr069Services,
     authService: AuthenticationService,
-    config: Configuration,
-    cache: Cache[String, Long]
+    config: Configuration
 )(implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
     extends Directives {
 
@@ -114,7 +112,7 @@ class Routes(
                   username,
                   credentials.params,
                   config.digestRealm,
-                  cache,
+                  NonceActor.getNonceActor(config.actorTimeout),
                   config.nonceTTL
                 )
                 onComplete(authService.authenticator(username, verifier)) {
@@ -127,7 +125,7 @@ class Routes(
                         config.digestRealm,
                         config.digestQop,
                         config.digestSecret,
-                        cache
+                        NonceActor.getNonceActor(config.actorTimeout)
                       )
                     )
                   case Failure(e) =>
@@ -149,7 +147,7 @@ class Routes(
               config.digestRealm,
               config.digestQop,
               config.digestSecret,
-              cache
+              NonceActor.getNonceActor(config.actorTimeout)
             )
           )
     }

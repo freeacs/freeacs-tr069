@@ -2,12 +2,17 @@ package com.github.freeacs.auth
 
 import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
+import java.util.concurrent.TimeUnit
 
-import akka.http.caching.scaladsl.Cache
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import akka.pattern.ask
+import akka.util.Timeout
+import com.github.freeacs.actors.{GetNonceTTL, SetNonceTTL}
 
 import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
 object DigestAuthorization {
@@ -17,7 +22,7 @@ object DigestAuthorization {
       realm: String,
       qop: String,
       digestSecret: String,
-      cache: Cache[String, Long]
+      nonceActor: ActorRef
   ) = {
     HttpResponse(
       status = StatusCodes.Unauthorized,
@@ -27,7 +32,7 @@ object DigestAuthorization {
           realm,
           qop,
           digestSecret,
-          cache
+          nonceActor
         )
       )
     )
@@ -37,52 +42,55 @@ object DigestAuthorization {
       username: String,
       params: Map[String, String],
       realm: String,
-      cache: Cache[String, Long],
+      nonceActor: ActorRef,
       nonceTTL: Long
-  )(secret: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    val nonce    = params("nonce")
-    val nc       = params("nc")
-    val cnonce   = params("cnonce")
-    val qop      = params("qop")
-    val uri      = params("uri")
-    val response = params("response")
-    val method   = "POST"
-    cache
-      .get(nonce)
-      .map(_.map { time =>
-        if (System.currentTimeMillis() - time > nonceTTL) {
-          false
-        } else {
-          val sharedSecret = {
-            if (secret != null && secret.length > 16 && !(passwordMd5(
-                  username,
-                  secret,
-                  method,
-                  uri,
-                  nonce,
-                  nc,
-                  cnonce,
-                  qop,
-                  realm
-                ) == response))
-              secret.substring(0, 16)
-            else
-              secret
+  )(
+      secret: String
+  )(implicit ec: ExecutionContext, system: ActorSystem): Future[Boolean] = {
+    val nonce                     = params("nonce")
+    val nc                        = params("nc")
+    val cnonce                    = params("cnonce")
+    val qop                       = params("qop")
+    val uri                       = params("uri")
+    val response                  = params("response")
+    val method                    = "POST"
+    implicit val timeout: Timeout = FiniteDuration(30, TimeUnit.SECONDS)
+    (nonceActor ? GetNonceTTL(nonce)).map(res => {
+      res.asInstanceOf[Option[Long]].exists {
+        time =>
+          if (System.currentTimeMillis() - time > nonceTTL) {
+            false
+          } else {
+            val sharedSecret = {
+              if (secret != null && secret.length > 16 && !(passwordMd5(
+                    username,
+                    secret,
+                    method,
+                    uri,
+                    nonce,
+                    nc,
+                    cnonce,
+                    qop,
+                    realm
+                  ) == response))
+                secret.substring(0, 16)
+              else
+                secret
+            }
+            passwordMd5(
+              username,
+              sharedSecret,
+              method,
+              uri,
+              nonce,
+              nc,
+              cnonce,
+              qop,
+              realm
+            ).equals(response)
           }
-          passwordMd5(
-            username,
-            sharedSecret,
-            method,
-            uri,
-            nonce,
-            nc,
-            cnonce,
-            qop,
-            realm
-          ).equals(response)
-        }
-      })
-      .getOrElse(Future.successful(false))
+      }
+    })
   }
 
   def getDigestHeader(
@@ -90,12 +98,12 @@ object DigestAuthorization {
       realm: String,
       qop: String,
       digestSecret: String,
-      cache: Cache[String, Long]
+      nonceActor: ActorRef
   ): RawHeader = {
     val nonce = DigestUtils.md5Hex(
       s"$remoteIp:${System.currentTimeMillis}:$digestSecret"
     )
-    cache.getOrLoad(nonce, _ => Future.successful(System.currentTimeMillis()))
+    nonceActor ! SetNonceTTL(nonce, System.currentTimeMillis())
     val opaque = DigestUtils.md5Hex(nonce)
     val authHeader =
       s"""Digest realm="$realm", qop="$qop", nonce="$nonce", opaque="$opaque""""

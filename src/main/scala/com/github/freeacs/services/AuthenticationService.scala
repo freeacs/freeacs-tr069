@@ -26,8 +26,11 @@ object AuthenticationService {
       services.getUnitSecret(user).flatMap {
         case Some(secret) =>
           verify(secret).map {
-            case true => Right(true)
+            case true => Right()
             case _    => Left("Wrong username or password")
+          }.recover[Either[String, Unit]] {
+            case _ =>
+              Left("Error occurred while trying to verify secret")
           }
         case _ =>
           Future.successful(Left("No secret found"))
