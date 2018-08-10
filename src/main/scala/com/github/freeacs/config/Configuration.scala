@@ -23,6 +23,7 @@ trait Configuration {
   val digestSecret: String
   val basicRealm: String
   val name: String
+  val mode: String
 
 }
 
@@ -51,5 +52,6 @@ object Configuration {
     val digestSecret: String = serverConfig.getString("auth.digest.secret")
     val authMethod: String   = serverConfig.getString("auth.method")
     val name: String         = serverConfig.getString("name")
+    val mode                 = serverConfig.getString("http.mode")
   }
 }

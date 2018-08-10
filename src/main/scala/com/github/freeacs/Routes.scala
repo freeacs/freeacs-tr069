@@ -2,6 +2,7 @@ package com.github.freeacs
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
+import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.{ask, CircuitBreaker, CircuitBreakerOpenException}
@@ -135,16 +136,23 @@ class Routes(
             makeHttpResponse(
               StatusCodes.OK,
               MediaTypes.`text/xml`,
+              configuration.mode,
               Some(elm.toString())
             )
           case Left(InvalidRequest) =>
             makeHttpResponse(
               StatusCodes.BadRequest,
               MediaTypes.`text/plain`,
+              configuration.mode,
               Some("Invalid request")
             )
           case _ =>
-            makeHttpResponse(StatusCodes.OK, MediaTypes.`text/plain`, None)
+            makeHttpResponse(
+              StatusCodes.OK,
+              MediaTypes.`text/plain`,
+              configuration.mode,
+              None
+            )
         }
       }
       .recover {
@@ -160,15 +168,32 @@ class Routes(
   def makeHttpResponse(
       status: StatusCode,
       charset: MediaType.WithOpenCharset,
-      str: Option[String]
-  ) =
+      mode: String,
+      payload: Option[String]
+  ) = {
+    val contentType = ContentType.WithCharset(charset, HttpCharsets.`UTF-8`)
     HttpResponse(
       status = status,
-      entity = HttpEntity.CloseDelimited(
-        ContentType.WithCharset(charset, HttpCharsets.`UTF-8`),
-        Source.single(str.map(ByteString.apply).getOrElse(ByteString.empty))
-      )
+      entity = mode match {
+        case "chunked" =>
+          HttpEntity.Chunked(
+            contentType,
+            Source.single(
+              payload
+                .map(ChunkStreamPart.apply)
+                .getOrElse(ChunkStreamPart(ByteString.empty))
+            )
+          )
+        case "delimited" =>
+          HttpEntity.CloseDelimited(
+            contentType,
+            Source.single(
+              payload.map(ByteString.apply).getOrElse(ByteString.empty)
+            )
+          )
+      }
     )
+  }
 
   def getConversationActor(user: String): Future[ActorRef] =
     system
