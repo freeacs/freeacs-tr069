@@ -32,21 +32,26 @@ class Routes(
   val log = LoggerFactory.getLogger(getClass)
 
   def routes: Route =
-    post {
-      path("tr069") {
-        logRequestResult("tr069") {
-          extractClientIP { remoteIp =>
-            authenticateConversation(
-              remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown"),
-              (username) =>
-                entity(as[SOAPRequest]) { soapRequest =>
-                  complete(handle(soapRequest, username))
-              }
-            )
+    get {
+      path("health") {
+        complete(s"${configuration.name} OK")
+      }
+    } ~
+      post {
+        path("tr069") {
+          logRequestResult("tr069") {
+            extractClientIP { remoteIp =>
+              authenticateConversation(
+                remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown"),
+                (username) =>
+                  entity(as[SOAPRequest]) { soapRequest =>
+                    complete(handle(soapRequest, username))
+                }
+              )
+            }
           }
         }
       }
-    }
 
   type Verifier = String => Boolean
 

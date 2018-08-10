@@ -22,6 +22,7 @@ trait Configuration {
   val digestQop: String
   val digestSecret: String
   val basicRealm: String
+  val name: String
 
 }
 
@@ -49,5 +50,6 @@ object Configuration {
     val digestQop: String    = serverConfig.getString("auth.digest.qop")
     val digestSecret: String = serverConfig.getString("auth.digest.secret")
     val authMethod: String   = serverConfig.getString("auth.method")
+    val name: String         = serverConfig.getString("name")
   }
 }

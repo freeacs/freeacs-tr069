@@ -34,6 +34,7 @@ class AppSpec extends WordSpec with Matchers with ScalatestRouteTest {
       val digestQop: String               = "test"
       val digestSecret: String            = "test"
       val basicRealm: String              = "test"
+      val name: String                    = "test"
     }
   ).routes
 
