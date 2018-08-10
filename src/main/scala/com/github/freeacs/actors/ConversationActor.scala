@@ -126,7 +126,7 @@ class ConversationActor(user: String, services: Tr069Services)(
         self ! PoisonPill
         stay replying (InvalidRequest)
       } else {
-        stay() using (stateData.copy(nc = Some(nc)))
+        stay using (stateData.copy(nc = Some(nc)))
       }
     case Event(e, s) ⇒
       log.warning(
