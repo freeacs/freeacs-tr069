@@ -115,7 +115,12 @@ class ConversationActor(user: String, services: Tr069Services)(
 
   whenUnhandled {
     case Event(NonceCount(nc), stateData) =>
-      stay() using (stateData.copy(nc = Some(nc)))
+      if (stateData.nc.map(_.toInt).getOrElse(0) >= nc.toInt) {
+        self ! PoisonPill
+        stay replying (InvalidRequest)
+      } else {
+        stay() using (stateData.copy(nc = Some(nc)))
+      }
     case Event(e, s) ⇒
       log.warning(
         "received unhandled request {} in state {}/{}",
