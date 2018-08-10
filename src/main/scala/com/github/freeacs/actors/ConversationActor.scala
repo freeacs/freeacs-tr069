@@ -1,17 +1,37 @@
 package com.github.freeacs.actors
 
-import akka.actor.{Actor, ActorLogging, FSM, PoisonPill, Props}
+import akka.actor.{
+  Actor,
+  ActorLogging,
+  ActorRef,
+  ActorSystem,
+  FSM,
+  PoisonPill,
+  Props
+}
 import akka.pattern.pipe
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.xml._
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
 object ConversationActor {
-  def props(user: String, services: Tr069Services)(
-      implicit ec: ExecutionContext
-  ): Props =
-    Props(new ConversationActor(user, services))
+  def getConversationActor(
+      user: String,
+      services: Tr069Services,
+      actorTimeout: FiniteDuration
+  )(implicit system: ActorSystem, ec: ExecutionContext): Future[ActorRef] =
+    system
+      .actorSelection(s"user/conversation-$user")
+      .resolveOne(actorTimeout)
+      .recover {
+        case _: Exception =>
+          system.actorOf(
+            Props(new ConversationActor(user, services)),
+            s"conversation-$user"
+          )
+      }
 }
 
 class ConversationActor(user: String, services: Tr069Services)(

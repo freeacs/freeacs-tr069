@@ -74,7 +74,13 @@ class Routes(
             val verifier: Verifier = _.equals(password)
             onComplete(authService.authenticator(username, verifier)) {
               case Success(Right(_)) =>
-                onComplete(getConversationActor(username)) {
+                onComplete(
+                  ConversationActor.getConversationActor(
+                    username,
+                    services,
+                    configuration.actorTimeout
+                  )
+                ) {
                   case Success(actor) =>
                     route(username, actor)
                   case Failure(_) =>
@@ -93,7 +99,13 @@ class Routes(
             val username = DigestAuthorization.username2unitId(
               credentials.params("username")
             )
-            onComplete(getConversationActor(username)) {
+            onComplete(
+              ConversationActor.getConversationActor(
+                username,
+                services,
+                configuration.actorTimeout
+              )
+            ) {
               case Success(actor) =>
                 actor ! NonceCount(nc = credentials.params("nc"))
                 val verifier: Verifier = DigestAuthorization.verifyDigest(
@@ -211,17 +223,5 @@ class Routes(
       }
     )
   }
-
-  def getConversationActor(user: String): Future[ActorRef] =
-    system
-      .actorSelection(s"user/conversation-$user")
-      .resolveOne(configuration.actorTimeout)
-      .recover {
-        case _: Exception =>
-          system.actorOf(
-            ConversationActor.props(user, services),
-            s"conversation-$user"
-          )
-      }
 
 }
