@@ -44,9 +44,9 @@ class Routes(
             extractClientIP { remoteIp =>
               authenticateConversation(
                 remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown"),
-                (username, actor) =>
+                (username, conversationActor) =>
                   entity(as[SOAPRequest]) { soapRequest =>
-                    complete(handle(soapRequest, username, actor))
+                    complete(handle(soapRequest, username, conversationActor))
                 }
               )
             }
@@ -81,8 +81,8 @@ class Routes(
                     configuration.actorTimeout
                   )
                 ) {
-                  case Success(actor) =>
-                    route(username, actor)
+                  case Success(conversationActor) =>
+                    route(username, conversationActor)
                   case Failure(_) =>
                     complete(
                       HttpResponse(StatusCodes.InternalServerError)
@@ -106,8 +106,8 @@ class Routes(
                 configuration.actorTimeout
               )
             ) {
-              case Success(actor) =>
-                actor ! NonceCount(nc = credentials.params("nc"))
+              case Success(conversationActor) =>
+                conversationActor ! NonceCount(nc = credentials.params("nc"))
                 val verifier: Verifier = DigestAuthorization.verifyDigest(
                   username,
                   credentials.params,
@@ -115,7 +115,7 @@ class Routes(
                 )
                 onComplete(authService.authenticator(username, verifier)) {
                   case Success(Right((_, _))) =>
-                    route(username, actor)
+                    route(username, conversationActor)
                   case Success(Left(_)) =>
                     complete(
                       DigestAuthorization.unauthorizedDigest(
@@ -151,12 +151,12 @@ class Routes(
   def handle(
       soapRequest: SOAPRequest,
       user: String,
-      actor: ActorRef
+      conversationActor: ActorRef
   ): Future[ToResponseMarshallable] = {
     implicit val timeout: Timeout = configuration.responseTimeout
     breaker
       .withCircuitBreaker(
-        actor ? soapRequest
+        conversationActor ? soapRequest
       )
       .map(_.asInstanceOf[SOAPResponse])
       .map[ToResponseMarshallable] { response =>
