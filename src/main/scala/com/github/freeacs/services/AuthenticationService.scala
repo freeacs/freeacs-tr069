@@ -5,8 +5,8 @@ import scala.concurrent.{ExecutionContext, Future}
 trait AuthenticationService {
   def authenticator(
       user: String,
-      verify: (String) => Boolean
-  ): Future[Either[String, (String, String)]]
+      verify: (String) => Future[Boolean]
+  ): Future[Either[String, Unit]]
 }
 
 object AuthenticationService {
@@ -21,13 +21,16 @@ object AuthenticationService {
 
     def authenticator(
         user: String,
-        verify: (String) => Boolean
-    ): Future[Either[String, (String, String)]] =
-      services.getUnitSecret(user).map {
-        case Some(secret) if verify(secret) =>
-          Right((user, secret))
+        verify: (String) => Future[Boolean]
+    ): Future[Either[String, Unit]] =
+      services.getUnitSecret(user).flatMap {
+        case Some(secret) =>
+          verify(secret).map {
+            case true => Right(true)
+            case _    => Left("Wrong username or password")
+          }
         case _ =>
-          Left("Wrong username and/or password")
+          Future.successful(Left("No secret found"))
       }
   }
 }

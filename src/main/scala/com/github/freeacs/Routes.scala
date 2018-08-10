@@ -1,6 +1,7 @@
 package com.github.freeacs
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.http.caching.scaladsl.Cache
 import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model._
@@ -26,7 +27,8 @@ class Routes(
     breaker: CircuitBreaker,
     services: Tr069Services,
     authService: AuthenticationService,
-    configuration: Configuration
+    config: Configuration,
+    cache: Cache[String, Long]
 )(implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
     extends Directives {
 
@@ -35,7 +37,7 @@ class Routes(
   def routes: Route =
     get {
       path("health") {
-        complete(s"${configuration.name} OK")
+        complete(s"${config.name} OK")
       }
     } ~
       post {
@@ -54,7 +56,7 @@ class Routes(
         }
       }
 
-  type Verifier = String => Boolean
+  type Verifier = String => Future[Boolean]
 
   def authenticateConversation(
       remoteIp: String,
@@ -71,14 +73,14 @@ class Routes(
           case "Basic" =>
             val (username, password) =
               BasicAuthorization.decodeBasicAuth(credentials.token())
-            val verifier: Verifier = _.equals(password)
+            val verifier: Verifier = p => Future.successful(p.equals(password))
             onComplete(authService.authenticator(username, verifier)) {
               case Success(Right(_)) =>
                 onComplete(
                   ConversationActor.getConversationActor(
                     username,
                     services,
-                    configuration.actorTimeout
+                    config.actorTimeout
                   )
                 ) {
                   case Success(conversationActor) =>
@@ -90,7 +92,7 @@ class Routes(
                 }
               case Success(Left(_)) =>
                 complete(
-                  BasicAuthorization.unauthorizedBasic(configuration.basicRealm)
+                  BasicAuthorization.unauthorizedBasic(config.basicRealm)
                 )
               case Failure(e) =>
                 complete(failed(e))
@@ -103,7 +105,7 @@ class Routes(
               ConversationActor.getConversationActor(
                 username,
                 services,
-                configuration.actorTimeout
+                config.actorTimeout
               )
             ) {
               case Success(conversationActor) =>
@@ -111,18 +113,21 @@ class Routes(
                 val verifier: Verifier = DigestAuthorization.verifyDigest(
                   username,
                   credentials.params,
-                  configuration.digestRealm
+                  config.digestRealm,
+                  cache,
+                  config.nonceTTL
                 )
                 onComplete(authService.authenticator(username, verifier)) {
-                  case Success(Right((_, _))) =>
+                  case Success(Right(())) =>
                     route(username, conversationActor)
                   case Success(Left(_)) =>
                     complete(
                       DigestAuthorization.unauthorizedDigest(
                         remoteIp,
-                        configuration.digestRealm,
-                        configuration.digestQop,
-                        configuration.digestSecret
+                        config.digestRealm,
+                        config.digestQop,
+                        config.digestSecret,
+                        cache
                       )
                     )
                   case Failure(e) =>
@@ -133,17 +138,18 @@ class Routes(
             }
         }
       case None =>
-        if (configuration.authMethod.toLowerCase.equals("basic"))
+        if (config.authMethod.toLowerCase.equals("basic"))
           complete(
-            BasicAuthorization.unauthorizedBasic(configuration.basicRealm)
+            BasicAuthorization.unauthorizedBasic(config.basicRealm)
           )
         else
           complete(
             DigestAuthorization.unauthorizedDigest(
               remoteIp,
-              configuration.digestRealm,
-              configuration.digestQop,
-              configuration.digestSecret
+              config.digestRealm,
+              config.digestQop,
+              config.digestSecret,
+              cache
             )
           )
     }
@@ -153,7 +159,7 @@ class Routes(
       user: String,
       conversationActor: ActorRef
   ): Future[ToResponseMarshallable] = {
-    implicit val timeout: Timeout = configuration.responseTimeout
+    implicit val timeout: Timeout = config.responseTimeout
     breaker
       .withCircuitBreaker(
         conversationActor ? soapRequest
@@ -165,21 +171,21 @@ class Routes(
             makeHttpResponse(
               StatusCodes.OK,
               MediaTypes.`text/xml`,
-              configuration.mode,
+              config.mode,
               Some(elm.toString())
             )
           case Left(InvalidRequest) =>
             makeHttpResponse(
               StatusCodes.BadRequest,
               MediaTypes.`text/plain`,
-              configuration.mode,
+              config.mode,
               Some("Invalid request")
             )
           case _ =>
             makeHttpResponse(
               StatusCodes.OK,
               MediaTypes.`text/plain`,
-              configuration.mode,
+              config.mode,
               None
             )
         }

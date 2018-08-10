@@ -7,7 +7,7 @@ import scala.concurrent.Future
 class DummyAuthenticationService extends AuthenticationService {
   def authenticator(
       user: String,
-      verify: String => Boolean
-  ): Future[Either[String, (String, String)]] =
-    Future.successful(Right(("easycwmp", "easycwmp")))
+      verify: String => Future[Boolean]
+  ): Future[Either[String, Unit]] =
+    Future.successful(Right(()))
 }

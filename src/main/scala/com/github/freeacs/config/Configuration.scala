@@ -21,6 +21,7 @@ trait Configuration {
   val digestRealm: String
   val digestQop: String
   val digestSecret: String
+  val nonceTTL: Long
   val basicRealm: String
   val name: String
   val mode: String
@@ -53,5 +54,6 @@ object Configuration {
     val authMethod: String   = serverConfig.getString("auth.method")
     val name: String         = serverConfig.getString("name")
     val mode                 = serverConfig.getString("http.mode")
+    val nonceTTL: Long       = serverConfig.getLong("auth.digest.nonceTTL")
   }
 }

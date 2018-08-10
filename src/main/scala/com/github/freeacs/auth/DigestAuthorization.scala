@@ -3,10 +3,12 @@ package com.github.freeacs.auth
 import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
 
+import akka.http.caching.scaladsl.Cache
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.RawHeader
 
 import scala.collection.immutable
+import scala.concurrent.{ExecutionContext, Future}
 
 object DigestAuthorization {
 
@@ -14,7 +16,8 @@ object DigestAuthorization {
       remoteIp: String,
       realm: String,
       qop: String,
-      digestSecret: String
+      digestSecret: String,
+      cache: Cache[String, Long]
   ) = {
     HttpResponse(
       status = StatusCodes.Unauthorized,
@@ -23,7 +26,8 @@ object DigestAuthorization {
           remoteIp,
           realm,
           qop,
-          digestSecret
+          digestSecret,
+          cache
         )
       )
     )
@@ -32,8 +36,10 @@ object DigestAuthorization {
   def verifyDigest(
       username: String,
       params: Map[String, String],
-      realm: String
-  )(secret: String): Boolean = {
+      realm: String,
+      cache: Cache[String, Long],
+      nonceTTL: Long
+  )(secret: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     val nonce    = params("nonce")
     val nc       = params("nc")
     val cnonce   = params("cnonce")
@@ -41,10 +47,31 @@ object DigestAuthorization {
     val uri      = params("uri")
     val response = params("response")
     val method   = "POST"
-    val sharedSecret = {
-      if (secret != null && secret.length > 16 && !(passwordMd5(
+    cache
+      .get(nonce)
+      .map(_.map { time =>
+        if (System.currentTimeMillis() - time > nonceTTL) {
+          false
+        } else {
+          val sharedSecret = {
+            if (secret != null && secret.length > 16 && !(passwordMd5(
+                  username,
+                  secret,
+                  method,
+                  uri,
+                  nonce,
+                  nc,
+                  cnonce,
+                  qop,
+                  realm
+                ) == response))
+              secret.substring(0, 16)
+            else
+              secret
+          }
+          passwordMd5(
             username,
-            secret,
+            sharedSecret,
             method,
             uri,
             nonce,
@@ -52,33 +79,23 @@ object DigestAuthorization {
             cnonce,
             qop,
             realm
-          ) == response))
-        secret.substring(0, 16)
-      else
-        secret
-    }
-    passwordMd5(
-      username,
-      sharedSecret,
-      method,
-      uri,
-      nonce,
-      nc,
-      cnonce,
-      qop,
-      realm
-    ).equals(response)
+          ).equals(response)
+        }
+      })
+      .getOrElse(Future.successful(false))
   }
 
   def getDigestHeader(
       remoteIp: String,
       realm: String,
       qop: String,
-      digestSecret: String
+      digestSecret: String,
+      cache: Cache[String, Long]
   ): RawHeader = {
     val nonce = DigestUtils.md5Hex(
       s"$remoteIp:${System.currentTimeMillis}:$digestSecret"
     )
+    cache.getOrLoad(nonce, _ => Future.successful(System.currentTimeMillis()))
     val opaque = DigestUtils.md5Hex(nonce)
     val authHeader =
       s"""Digest realm="$realm", qop="$qop", nonce="$nonce", opaque="$opaque""""

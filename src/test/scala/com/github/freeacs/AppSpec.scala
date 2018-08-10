@@ -2,6 +2,7 @@ package com.github.freeacs
 
 import java.util.concurrent.TimeUnit
 
+import akka.http.caching.LfuCache
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.pattern.CircuitBreaker
@@ -36,7 +37,9 @@ class AppSpec extends WordSpec with Matchers with ScalatestRouteTest {
       val basicRealm: String              = "test"
       val name: String                    = "test"
       val mode: String                    = "chunked"
-    }
+      val nonceTTL                        = 1000
+    },
+    LfuCache[String, Long]
   ).routes
 
   "The server" should {
