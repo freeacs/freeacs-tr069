@@ -205,21 +205,23 @@ class Routes(
       status = status,
       entity = mode match {
         case "chunked" =>
-          HttpEntity.Chunked(
-            contentType,
-            Source.single(
-              payload
-                .map(ChunkStreamPart.apply)
-                .getOrElse(ChunkStreamPart(ByteString.empty))
-            )
-          )
+          payload
+            .map(p => {
+              HttpEntity.Chunked(
+                contentType,
+                Source.single(ChunkStreamPart(p))
+              )
+            })
+            .getOrElse(HttpEntity.Empty)
         case "delimited" =>
-          HttpEntity.CloseDelimited(
-            contentType,
-            Source.single(
-              payload.map(ByteString.apply).getOrElse(ByteString.empty)
-            )
-          )
+          payload
+            .map(p => {
+              HttpEntity.CloseDelimited(
+                contentType,
+                Source.single(ByteString(p))
+              )
+            })
+            .getOrElse(HttpEntity.Empty)
       }
     )
   }
