@@ -54,7 +54,7 @@ object DigestAuthorization {
     val uri                       = params("uri")
     val response                  = params("response")
     val method                    = "POST"
-    implicit val timeout: Timeout = FiniteDuration(30, TimeUnit.SECONDS)
+    implicit val timeout: Timeout = FiniteDuration(1, TimeUnit.SECONDS)
     (nonceActor ? GetNonceTTL(nonce)).map(res => {
       res.asInstanceOf[Option[Long]].exists {
         time =>
