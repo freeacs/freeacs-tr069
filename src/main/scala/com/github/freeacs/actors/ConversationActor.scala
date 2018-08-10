@@ -115,7 +115,14 @@ class ConversationActor(user: String, services: Tr069Services)(
 
   whenUnhandled {
     case Event(NonceCount(nc), stateData) =>
-      if (stateData.nc.map(_.toInt).getOrElse(0) >= nc.toInt) {
+      if (stateData.nc.map(_.toInt).getOrElse(0) + 1 != nc.toInt) {
+        log.error(
+          "nc ins session {} + 1 is not equal to {}. Killing session {}. Active state {}.",
+          stateData.nc,
+          nc,
+          stateData,
+          stateName
+        )
         self ! PoisonPill
         stay replying (InvalidRequest)
       } else {
