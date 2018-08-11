@@ -54,6 +54,11 @@ class Routes(
         }
       }
 
+  def failed(e: Throwable) = {
+    log.error("Failed", e)
+    HttpResponse(StatusCodes.InternalServerError)
+  }
+
   type Verifier = String => Future[Boolean]
 
   def authenticateConversation(
@@ -62,10 +67,6 @@ class Routes(
   ) =
     extractCredentials {
       case Some(credentials) =>
-        def failed(e: Throwable) = {
-          log.error("Failed", e)
-          HttpResponse(StatusCodes.InternalServerError)
-        }
         credentials.scheme() match {
           case "Basic" =>
             val (username, password) =
@@ -82,10 +83,8 @@ class Routes(
                 ) {
                   case Success(conversationActor) =>
                     route(username, conversationActor)
-                  case Failure(_) =>
-                    complete(
-                      HttpResponse(StatusCodes.InternalServerError)
-                    )
+                  case Failure(e) =>
+                    complete(failed(e))
                 }
               case Success(Left(_)) =>
                 complete(
@@ -132,11 +131,8 @@ class Routes(
                       case Failure(exception) =>
                         complete(failed(exception))
                     }
-                  case Failure(_) =>
-                    complete(
-                      HttpResponse(StatusCodes.InternalServerError)
-                        .withEntity("Failed to retrieve nonce actor")
-                    )
+                  case Failure(e) =>
+                    complete(failed(e))
                 }
               case Failure(exception) =>
                 complete(failed(exception))
@@ -159,11 +155,8 @@ class Routes(
                   actorRef
                 )
               )
-            case Failure(_) =>
-              complete(
-                HttpResponse(StatusCodes.InternalServerError)
-                  .withEntity("Failed to retrieve nonce actor")
-              )
+            case Failure(e) =>
+              complete(failed(e))
           }
 
     }
@@ -210,7 +203,7 @@ class Routes(
             HttpResponse(StatusCodes.TooManyRequests).withEntity("Server Busy")
           )
         case e: Throwable =>
-          Future.successful(HttpResponse(StatusCodes.InternalServerError))
+          Future.successful(failed(e))
       }
   }
 
