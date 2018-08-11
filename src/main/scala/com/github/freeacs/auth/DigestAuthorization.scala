@@ -46,7 +46,7 @@ object DigestAuthorization {
       nonceTTL: Long
   )(
       secret: String
-  )(implicit ec: ExecutionContext, system: ActorSystem): Future[Boolean] = {
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     val nonce                     = params("nonce")
     val nc                        = params("nc")
     val cnonce                    = params("cnonce")
