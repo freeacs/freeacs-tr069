@@ -63,9 +63,8 @@ class Routes(
     extractCredentials {
       case Some(credentials) =>
         def failed(e: Throwable) = {
-          log.error("Failed to retrieve/check user secret", e)
+          log.error("Failed", e)
           HttpResponse(StatusCodes.InternalServerError)
-            .withEntity("Failed to retrieve/check user secret")
         }
         credentials.scheme() match {
           case "Basic" =>
