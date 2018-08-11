@@ -1,10 +1,10 @@
 package com.github.freeacs
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.Http
 import akka.pattern.CircuitBreaker
 import akka.stream.ActorMaterializer
-import com.github.freeacs.actors.SessionManager
+import com.github.freeacs.actors.Conversation
 import com.github.freeacs.config.Configuration
 import com.github.freeacs.services.{AuthenticationService, Tr069Services}
 import com.typesafe.config.ConfigFactory
@@ -24,19 +24,25 @@ trait Server {
 
   val breaker =
     new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
+
   val services    = Tr069Services.from(dbConfig)
   val authService = AuthenticationService.from(services)
+  val conversation =
+    system.actorOf(Conversation.props(services, config))
+
   val routes = new Routes(
     breaker,
     services,
     authService,
     config,
-    system.actorOf(SessionManager.props())
+    conversation
   )
 
   val server = Http().bindAndHandle(routes.routes, hostname, port)
+
   StdIn.readLine()
   server.flatMap(_.unbind)
+
   system.terminate()
 
 }

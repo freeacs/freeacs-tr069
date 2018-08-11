@@ -4,12 +4,12 @@ import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.ActorRef
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.github.freeacs.actors.{GetNonceTTL, SetNonceTTL}
+import com.github.freeacs.actors.Conversation.{GetNonceCreated, SetNonce}
 
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
@@ -46,16 +46,18 @@ object DigestAuthorization {
       nonceTTL: Long
   )(
       secret: String
-  )(implicit ec: ExecutionContext): Future[Boolean] = {
-    val nonce                     = params("nonce")
-    val nc                        = params("nc")
-    val cnonce                    = params("cnonce")
-    val qop                       = params("qop")
-    val uri                       = params("uri")
-    val response                  = params("response")
-    val method                    = "POST"
-    implicit val timeout: Timeout = FiniteDuration(1, TimeUnit.SECONDS)
-    (nonceActor ? GetNonceTTL(nonce)).map(res => {
+  )(
+      implicit ec: ExecutionContext,
+      timeout: Timeout = FiniteDuration(1, TimeUnit.SECONDS)
+  ): Future[Boolean] = {
+    val nonce    = params("nonce")
+    val nc       = params("nc")
+    val cnonce   = params("cnonce")
+    val qop      = params("qop")
+    val uri      = params("uri")
+    val response = params("response")
+    val method   = "POST"
+    (nonceActor ? GetNonceCreated(nonce)).map(res => {
       res.asInstanceOf[Option[Long]].exists {
         time =>
           if (System.currentTimeMillis() - time > nonceTTL) {
@@ -103,7 +105,10 @@ object DigestAuthorization {
     val nonce = DigestUtils.md5Hex(
       s"$remoteIp:${System.currentTimeMillis}:$digestSecret"
     )
-    nonceActor ! SetNonceTTL(nonce, System.currentTimeMillis())
+    nonceActor ! SetNonce(
+      System.currentTimeMillis(),
+      nonce
+    )
     val opaque = DigestUtils.md5Hex(nonce)
     val authHeader =
       s"""Digest realm="$realm", qop="$qop", nonce="$nonce", opaque="$opaque""""

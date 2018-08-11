@@ -1,26 +1,17 @@
 package com.github.freeacs
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.{Directive, Directives, Route}
+import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.{ask, CircuitBreaker, CircuitBreakerOpenException}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.{ByteString, Timeout}
-import com.github.freeacs.actors.SessionManager.{
-  CreateSession,
-  GetSessionIds,
-  SessionIds
-}
-import com.github.freeacs.actors.{
-  ConversationActor,
-  NonceActor,
-  NonceCount,
-  SessionId
+import com.github.freeacs.actors.Conversation.{
+  CreateSessionIfNotPresent,
+  GetResponse
 }
 import com.github.freeacs.auth.{BasicAuthorization, DigestAuthorization}
 import com.github.freeacs.config.Configuration
@@ -29,7 +20,6 @@ import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
@@ -40,7 +30,7 @@ class Routes(
     services: Tr069Services,
     authService: AuthenticationService,
     config: Configuration,
-    replicator: ActorRef
+    conversation: ActorRef
 )(implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
     extends Directives {
 
@@ -54,22 +44,22 @@ class Routes(
     } ~
       post {
         path("tr069") {
-          logRequestResult("tr069") {
-            extractClientIP { remoteIp =>
-              authenticateConversation(
-                remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown"),
-                (username, conversationActor) =>
-                  entity(as[SOAPRequest]) { soapRequest =>
-                    complete(handle(soapRequest, username, conversationActor))
-                }
-              )
-            }
+          extractClientIP { remoteIp =>
+//            logRequestResult("tr069") {
+            authenticateConversation(
+              remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown"),
+              (username, conversationActor) =>
+                entity(as[SOAPRequest]) { soapRequest =>
+                  complete(handle(soapRequest, username, conversationActor))
+              }
+            )
           }
+//          }
         }
       }
 
   def failed(e: Throwable) = {
-    log.error("Failed", e)
+    log.error("Failed " + e.getLocalizedMessage, e)
     HttpResponse(StatusCodes.InternalServerError)
   }
 
@@ -88,18 +78,7 @@ class Routes(
             val verifier: Verifier = p => Future.successful(p.equals(password))
             onComplete(authService.authenticator(username, verifier)) {
               case Success(Right(_)) =>
-                onComplete(
-                  ConversationActor.getConversationActor(
-                    username,
-                    services,
-                    config.actorTimeout
-                  )
-                ) {
-                  case Success(conversationActor) =>
-                    route(username, conversationActor)
-                  case Failure(e) =>
-                    complete(failed(e))
-                }
+                route(username, conversation)
               case Success(Left(_)) =>
                 complete(
                   BasicAuthorization.unauthorizedBasic(config.basicRealm)
@@ -111,58 +90,26 @@ class Routes(
             val username = DigestAuthorization.username2unitId(
               credentials.params("username")
             )
-            onComplete(
-              ConversationActor.getConversationActor(
-                username,
-                services,
-                config.actorTimeout
-              )
-            ) {
-              case Success(conversationActor) =>
-                conversationActor ! NonceCount(nc = credentials.params("nc"))
-                onComplete(NonceActor.getNonceActor(config.actorTimeout)) {
-                  case Success(actorRef) =>
-                    val verifier: Verifier = DigestAuthorization.verifyDigest(
-                      username,
-                      credentials.params,
-                      config.digestRealm,
-                      actorRef,
-                      config.nonceTTL
-                    )
-                    onComplete(authService.authenticator(username, verifier)) {
-                      case Success(Right(())) =>
-                        replicator ! CreateSession(SessionId())
-                        implicit val timeout: Timeout =
-                          FiniteDuration(1, TimeUnit.SECONDS)
-                        onComplete(
-                          (replicator ? GetSessionIds)
-                            .map(_.asInstanceOf[SessionIds])
-                        ) {
-                          case Success(value) =>
-                            log.info(
-                              "There is currently {} sessionIds in SessionManager",
-                              value.ids.size
-                            )
-                            route(username, conversationActor)
-                          case Failure(exception) =>
-                            complete(failed(exception))
-                        }
-                      case Success(Left(_)) =>
-                        complete(
-                          DigestAuthorization.unauthorizedDigest(
-                            remoteIp,
-                            config.digestRealm,
-                            config.digestQop,
-                            config.digestSecret,
-                            actorRef
-                          )
-                        )
-                      case Failure(exception) =>
-                        complete(failed(exception))
-                    }
-                  case Failure(e) =>
-                    complete(failed(e))
-                }
+            val verifier: Verifier = DigestAuthorization.verifyDigest(
+              username,
+              credentials.params,
+              config.digestRealm,
+              conversation,
+              config.nonceTTL
+            )
+            onComplete(authService.authenticator(username, verifier)) {
+              case Success(Right(())) =>
+                route(username, conversation)
+              case Success(Left(_)) =>
+                complete(
+                  DigestAuthorization.unauthorizedDigest(
+                    remoteIp,
+                    config.digestRealm,
+                    config.digestQop,
+                    config.digestSecret,
+                    conversation
+                  )
+                )
               case Failure(exception) =>
                 complete(failed(exception))
             }
@@ -173,20 +120,15 @@ class Routes(
             BasicAuthorization.unauthorizedBasic(config.basicRealm)
           )
         else
-          onComplete(NonceActor.getNonceActor(config.actorTimeout)) {
-            case Success(actorRef) =>
-              complete(
-                DigestAuthorization.unauthorizedDigest(
-                  remoteIp,
-                  config.digestRealm,
-                  config.digestQop,
-                  config.digestSecret,
-                  actorRef
-                )
-              )
-            case Failure(e) =>
-              complete(failed(e))
-          }
+          complete(
+            DigestAuthorization.unauthorizedDigest(
+              remoteIp,
+              config.digestRealm,
+              config.digestQop,
+              config.digestSecret,
+              conversation
+            )
+          )
 
     }
 
@@ -195,10 +137,11 @@ class Routes(
       user: String,
       conversationActor: ActorRef
   ): Future[ToResponseMarshallable] = {
+    conversationActor ! CreateSessionIfNotPresent(user)
     implicit val timeout: Timeout = config.responseTimeout
     breaker
       .withCircuitBreaker(
-        conversationActor ? soapRequest
+        conversationActor ? GetResponse(user, soapRequest)
       )
       .map(_.asInstanceOf[SOAPResponse])
       .map[ToResponseMarshallable] { response =>
