@@ -39,7 +39,8 @@ class AppSpec extends WordSpec with Matchers with ScalatestRouteTest {
       val name: String                    = "test"
       val mode: String                    = "chunked"
       val nonceTTL                        = 1000
-    }
+    },
+    ActorRef.noSender
   ).routes
 
   "The server" should {

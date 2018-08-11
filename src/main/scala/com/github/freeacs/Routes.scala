@@ -1,15 +1,27 @@
 package com.github.freeacs
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.{Directive, Directives, Route}
 import akka.pattern.{ask, CircuitBreaker, CircuitBreakerOpenException}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.{ByteString, Timeout}
-import com.github.freeacs.actors.{ConversationActor, NonceActor, NonceCount}
+import com.github.freeacs.actors.SessionManager.{
+  CreateSession,
+  GetSessionIds,
+  SessionIds
+}
+import com.github.freeacs.actors.{
+  ConversationActor,
+  NonceActor,
+  NonceCount,
+  SessionId
+}
 import com.github.freeacs.auth.{BasicAuthorization, DigestAuthorization}
 import com.github.freeacs.config.Configuration
 import com.github.freeacs.services.{AuthenticationService, Tr069Services}
@@ -17,6 +29,7 @@ import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
 import org.slf4j.LoggerFactory
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
@@ -26,7 +39,8 @@ class Routes(
     breaker: CircuitBreaker,
     services: Tr069Services,
     authService: AuthenticationService,
-    config: Configuration
+    config: Configuration,
+    replicator: ActorRef
 )(implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
     extends Directives {
 
@@ -117,7 +131,22 @@ class Routes(
                     )
                     onComplete(authService.authenticator(username, verifier)) {
                       case Success(Right(())) =>
-                        route(username, conversationActor)
+                        replicator ! CreateSession(SessionId())
+                        implicit val timeout: Timeout =
+                          FiniteDuration(1, TimeUnit.SECONDS)
+                        onComplete(
+                          (replicator ? GetSessionIds)
+                            .map(_.asInstanceOf[SessionIds])
+                        ) {
+                          case Success(value) =>
+                            log.info(
+                              "There is currently {} sessionIds in SessionManager",
+                              value.ids.size
+                            )
+                            route(username, conversationActor)
+                          case Failure(exception) =>
+                            complete(failed(exception))
+                        }
                       case Success(Left(_)) =>
                         complete(
                           DigestAuthorization.unauthorizedDigest(
