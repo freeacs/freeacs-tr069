@@ -17,14 +17,11 @@ object NonceActor {
   def getNonceActor(actorTimeout: FiniteDuration)(
       implicit system: ActorSystem,
       ec: ExecutionContext
-  ): ActorRef =
-    Await.result(
-      system.actorSelection(s"user/nonce").resolveOne(actorTimeout).recover {
-        case _: Exception =>
-          system.actorOf(props, "nonce")
-      },
-      actorTimeout
-    )
+  ): Future[ActorRef] =
+    system.actorSelection(s"user/nonce").resolveOne(actorTimeout).recover {
+      case _: Exception =>
+        system.actorOf(props, "nonce")
+    }
 }
 
 class NonceActor extends Actor with ActorLogging {

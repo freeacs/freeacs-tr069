@@ -108,28 +108,36 @@ class Routes(
             ) {
               case Success(conversationActor) =>
                 conversationActor ! NonceCount(nc = credentials.params("nc"))
-                val verifier: Verifier = DigestAuthorization.verifyDigest(
-                  username,
-                  credentials.params,
-                  config.digestRealm,
-                  NonceActor.getNonceActor(config.actorTimeout),
-                  config.nonceTTL
-                )
-                onComplete(authService.authenticator(username, verifier)) {
-                  case Success(Right(())) =>
-                    route(username, conversationActor)
-                  case Success(Left(_)) =>
-                    complete(
-                      DigestAuthorization.unauthorizedDigest(
-                        remoteIp,
-                        config.digestRealm,
-                        config.digestQop,
-                        config.digestSecret,
-                        NonceActor.getNonceActor(config.actorTimeout)
-                      )
+                onComplete(NonceActor.getNonceActor(config.actorTimeout)) {
+                  case Success(actorRef) =>
+                    val verifier: Verifier = DigestAuthorization.verifyDigest(
+                      username,
+                      credentials.params,
+                      config.digestRealm,
+                      actorRef,
+                      config.nonceTTL
                     )
-                  case Failure(e) =>
-                    complete(failed(e))
+                    onComplete(authService.authenticator(username, verifier)) {
+                      case Success(Right(())) =>
+                        route(username, conversationActor)
+                      case Success(Left(_)) =>
+                        complete(
+                          DigestAuthorization.unauthorizedDigest(
+                            remoteIp,
+                            config.digestRealm,
+                            config.digestQop,
+                            config.digestSecret,
+                            actorRef
+                          )
+                        )
+                      case Failure(exception) =>
+                        complete(failed(exception))
+                    }
+                  case Failure(_) =>
+                    complete(
+                      HttpResponse(StatusCodes.InternalServerError)
+                        .withEntity("Failed to retrieve nonce actor")
+                    )
                 }
               case Failure(exception) =>
                 complete(failed(exception))
@@ -141,15 +149,24 @@ class Routes(
             BasicAuthorization.unauthorizedBasic(config.basicRealm)
           )
         else
-          complete(
-            DigestAuthorization.unauthorizedDigest(
-              remoteIp,
-              config.digestRealm,
-              config.digestQop,
-              config.digestSecret,
-              NonceActor.getNonceActor(config.actorTimeout)
-            )
-          )
+          onComplete(NonceActor.getNonceActor(config.actorTimeout)) {
+            case Success(actorRef) =>
+              complete(
+                DigestAuthorization.unauthorizedDigest(
+                  remoteIp,
+                  config.digestRealm,
+                  config.digestQop,
+                  config.digestSecret,
+                  actorRef
+                )
+              )
+            case Failure(_) =>
+              complete(
+                HttpResponse(StatusCodes.InternalServerError)
+                  .withEntity("Failed to retrieve nonce actor")
+              )
+          }
+
     }
 
   def handle(
