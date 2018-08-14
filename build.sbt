@@ -17,6 +17,8 @@ scalaxbPackageName in (Compile, scalaxb) := "generated"
 scalaxbAutoPackages in (Compile, scalaxb) := true
 scalaxbDispatchVersion in (Compile, scalaxb) := "0.13.4"
 
+resolvers += "jitpack" at "https://jitpack.io"
+
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaV,
   "com.typesafe.akka" %% "akka-stream" % akkaV,
@@ -33,5 +35,6 @@ libraryDependencies ++= Seq(
   "com.h2database" % "h2" % "1.4.197",
   "commons-codec" % "commons-codec" % "1.11",
   "com.typesafe.akka" %% "akka-cluster" % akkaV,
-  "com.typesafe.akka" %% "akka-distributed-data" % akkaV
+  "com.typesafe.akka" %% "akka-distributed-data" % akkaV,
+  "com.github.jarlah" % "AuthenticScala" % "master-SNAPSHOT"
 )

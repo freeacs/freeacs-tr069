@@ -10,4 +10,8 @@ class DummyAuthenticationService extends AuthenticationService {
       verify: String => Future[Boolean]
   ): Future[Either[String, Unit]] =
     Future.successful(Right(()))
+
+  def getSecret(
+      user: String
+  ): Future[String] = Future.successful(user)
 }

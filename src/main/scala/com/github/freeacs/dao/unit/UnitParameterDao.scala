@@ -23,7 +23,10 @@ class UnitParameterDao(val config: DatabaseConfig[JdbcProfile])(
       unitParameters
         .join(unitTypeParameters)
         .on(_.unitTypeParamId === _.unitTypeParamId)
-        .filter(_._2.name === SystemParameters.SECRET)
+        .filter(
+          tables =>
+            tables._2.name === SystemParameters.SECRET && tables._1.unitId === unitId
+        )
         .map(_._1.value)
         .result
         .headOption

@@ -7,9 +7,13 @@ trait AuthenticationService {
       user: String,
       verify: (String) => Future[Boolean]
   ): Future[Either[String, Unit]]
+
+  def getSecret(user: String): Future[String]
 }
 
 object AuthenticationService {
+  type Verifier = String => Future[Boolean]
+
   def from(
       services: Tr069Services
   )(implicit ex: ExecutionContext): AuthenticationService =
@@ -21,7 +25,7 @@ object AuthenticationService {
 
     def authenticator(
         user: String,
-        verify: (String) => Future[Boolean]
+        verify: Verifier
     ): Future[Either[String, Unit]] =
       services.getUnitSecret(user).flatMap {
         case Some(secret) =>
@@ -35,5 +39,12 @@ object AuthenticationService {
         case _ =>
           Future.successful(Left("No secret found"))
       }
+
+    def getSecret(
+        user: String
+    ): Future[String] = services.getUnitSecret(user).flatMap {
+      case Some(secret) => Future.successful(secret)
+      case _            => Future.failed(new IllegalArgumentException)
+    }
   }
 }

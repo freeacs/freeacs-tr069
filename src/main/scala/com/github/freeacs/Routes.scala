@@ -1,27 +1,30 @@
 package com.github.freeacs
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.{HttpResponse, _}
 import akka.http.scaladsl.server.{Directives, Route}
-import akka.pattern.{ask, CircuitBreaker, CircuitBreakerOpenException}
+import akka.pattern.{CircuitBreaker, CircuitBreakerOpenException}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
-import akka.util.{ByteString, Timeout}
-import com.github.freeacs.actors.Conversation.{
-  CreateSessionIfNotPresent,
-  GetResponse
-}
-import com.github.freeacs.auth.{BasicAuthorization, DigestAuthorization}
+import akka.util.ByteString
+import com.github.freeacs.Implicits._
 import com.github.freeacs.config.Configuration
 import com.github.freeacs.services.{AuthenticationService, Tr069Services}
+import com.github.freeacs.session.SessionService
 import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
+import com.github.jarlah.authenticscala.Authenticator._
+import com.github.jarlah.authenticscala.{
+  AuthenticationContext,
+  AuthenticationResult
+}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.language.postfixOps
+import scala.language.{implicitConversions, postfixOps}
 import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
 
@@ -30,11 +33,24 @@ class Routes(
     services: Tr069Services,
     authService: AuthenticationService,
     config: Configuration,
-    conversation: ActorRef
+    conversation: SessionService
 )(implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
     extends Directives {
 
   val log = LoggerFactory.getLogger(getClass)
+
+  def extractAuthenticationContext(
+      route: AuthenticationContext => Route
+  ): Route =
+    (extractRequest & extractClientIP) { (request, remoteIp) =>
+      val context: AuthenticationContext = request
+      route(
+        context.copy(
+          remoteAddress =
+            remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown")
+        )
+      )
+    }
 
   def routes: Route =
     get {
@@ -44,125 +60,60 @@ class Routes(
     } ~
       post {
         path("tr069") {
-          extractClientIP { remoteIp =>
-//            logRequestResult("tr069") {
-            authenticateConversation(
-              remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown"),
-              (username, conversationActor) =>
-                entity(as[SOAPRequest]) { soapRequest =>
-                  complete(handle(soapRequest, username, conversationActor))
+          logRequestResult("tr069") {
+            authenticateConversation { user =>
+              entity(as[SOAPRequest]) { soapRequest =>
+                complete(handle(soapRequest, user))
               }
-            )
+            }
           }
-//          }
         }
       }
 
-  def failed(e: Throwable) = {
-    log.error("Failed " + e.getLocalizedMessage, e)
-    HttpResponse(StatusCodes.InternalServerError)
-  }
-
-  type Verifier = String => Future[Boolean]
-
-  def authenticateConversation(
-      remoteIp: String,
-      route: (String, ActorRef) => Route
-  ) =
-    extractCredentials {
-      case Some(credentials) =>
-        credentials.scheme() match {
-          case "Basic" =>
-            val (username, password) =
-              BasicAuthorization.decodeBasicAuth(credentials.token())
-            val verifier: Verifier = p => Future.successful(p.equals(password))
-            onComplete(authService.authenticator(username, verifier)) {
-              case Success(Right(_)) =>
-                route(username, conversation)
-              case Success(Left(_)) =>
-                complete(
-                  BasicAuthorization.unauthorizedBasic(config.basicRealm)
-                )
-              case Failure(e) =>
-                complete(failed(e))
-            }
-          case "Digest" =>
-            val username = DigestAuthorization.username2unitId(
-              credentials.params("username")
+  def authenticateConversation(route: (String) => Route): Route =
+    extractAuthenticationContext { (context) =>
+      onComplete(
+        authenticate(context, authService.getSecret, config.authMethod)
+      ) {
+        case Success(AuthenticationResult(success, maybeUser, maybeError)) =>
+          if (success && maybeUser.isDefined) {
+            route(maybeUser.get)
+          } else {
+            complete(
+              HttpResponse(Unauthorized, challenge(context, config.authMethod))
+                .withEntity(maybeError.getOrElse(""))
             )
-            val verifier: Verifier = DigestAuthorization.verifyDigest(
-              username,
-              credentials.params,
-              config.digestRealm,
-              conversation,
-              config.nonceTTL
-            )
-            onComplete(authService.authenticator(username, verifier)) {
-              case Success(Right(())) =>
-                route(username, conversation)
-              case Success(Left(_)) =>
-                complete(
-                  DigestAuthorization.unauthorizedDigest(
-                    remoteIp,
-                    config.digestRealm,
-                    config.digestQop,
-                    config.digestSecret,
-                    conversation
-                  )
-                )
-              case Failure(exception) =>
-                complete(failed(exception))
-            }
-        }
-      case None =>
-        if (config.authMethod.toLowerCase.equals("basic"))
-          complete(
-            BasicAuthorization.unauthorizedBasic(config.basicRealm)
-          )
-        else
-          complete(
-            DigestAuthorization.unauthorizedDigest(
-              remoteIp,
-              config.digestRealm,
-              config.digestQop,
-              config.digestSecret,
-              conversation
-            )
-          )
-
+          }
+        case Failure(_) =>
+          complete(HttpResponse(InternalServerError))
+      }
     }
 
   def handle(
-      soapRequest: SOAPRequest,
-      user: String,
-      conversationActor: ActorRef
-  ): Future[ToResponseMarshallable] = {
-    conversationActor ! CreateSessionIfNotPresent(user)
-    implicit val timeout: Timeout = config.responseTimeout
+      request: SOAPRequest,
+      user: String
+  ): Future[ToResponseMarshallable] =
     breaker
-      .withCircuitBreaker(
-        conversationActor ? GetResponse(user, soapRequest)
-      )
-      .map(_.asInstanceOf[SOAPResponse])
+      .withCircuitBreaker(conversation.getResponse(user, request))
       .map[ToResponseMarshallable] { response =>
         Marshal(response).to[Either[SOAPResponse, NodeSeq]].map {
           case Right(elm) =>
             makeHttpResponse(
-              StatusCodes.OK,
+              OK,
               MediaTypes.`text/xml`,
               config.mode,
               Some(elm.toString())
             )
           case Left(InvalidRequest) =>
             makeHttpResponse(
-              StatusCodes.BadRequest,
+              BadRequest,
               MediaTypes.`text/plain`,
               config.mode,
               Some("Invalid request")
             )
           case _ =>
             makeHttpResponse(
-              StatusCodes.OK,
+              OK,
               MediaTypes.`text/plain`,
               config.mode,
               None
@@ -172,43 +123,40 @@ class Routes(
       .recover {
         case _: CircuitBreakerOpenException =>
           Future.successful(
-            HttpResponse(StatusCodes.TooManyRequests).withEntity("Server Busy")
+            HttpResponse(TooManyRequests).withEntity("Server Busy")
           )
         case e: Throwable =>
-          Future.successful(failed(e))
+          log.error("Failed " + e.getLocalizedMessage, e)
+          Future.successful(HttpResponse(InternalServerError))
       }
-  }
 
   def makeHttpResponse(
       status: StatusCode,
       charset: MediaType.WithOpenCharset,
       mode: String,
       payload: Option[String]
-  ) = {
-    val contentType = ContentType.WithCharset(charset, HttpCharsets.`UTF-8`)
-    HttpResponse(
-      status = status,
-      entity = mode match {
-        case "chunked" =>
-          payload
-            .map(p => {
-              HttpEntity.Chunked(
-                contentType,
-                Source.single(ChunkStreamPart(p))
-              )
-            })
-            .getOrElse(HttpEntity.Empty)
-        case "delimited" =>
-          payload
-            .map(p => {
-              HttpEntity.CloseDelimited(
-                contentType,
-                Source.single(ByteString(p))
-              )
-            })
-            .getOrElse(HttpEntity.Empty)
-      }
-    )
-  }
+  ) = HttpResponse(
+    status = status,
+    entity = mode match {
+      case "chunked" =>
+        payload
+          .map(p => {
+            HttpEntity.Chunked(
+              ContentType.WithCharset(charset, HttpCharsets.`UTF-8`),
+              Source.single(ChunkStreamPart(p))
+            )
+          })
+          .getOrElse(HttpEntity.Empty)
+      case "delimited" =>
+        payload
+          .map(p => {
+            HttpEntity.CloseDelimited(
+              ContentType.WithCharset(charset, HttpCharsets.`UTF-8`),
+              Source.single(ByteString(p))
+            )
+          })
+          .getOrElse(HttpEntity.Empty)
+    }
+  )
 
 }
