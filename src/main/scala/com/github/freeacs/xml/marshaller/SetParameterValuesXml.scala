@@ -16,7 +16,7 @@ object SetParameterValuesXml
         <ParameterList soapenc:arrayType="cwmp:ParameterValueStruct[1]">
           <ParameterValueStruct>
             <Name>InternetGatewayDevice.ManagementServer.PeriodicInformInterval</Name>
-            <Value xsi:type="xsd:unsignedInt">5000</Value>
+            <Value xsi:type="xsd:unsignedInt">7000</Value>
           </ParameterValueStruct>
         </ParameterList>
       </cwmp:SetParameterValues>
