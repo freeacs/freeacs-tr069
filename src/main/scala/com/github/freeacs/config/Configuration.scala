@@ -18,11 +18,6 @@ trait Configuration {
   val hostname: String
   val port: Int
   val authMethod: String
-  val digestRealm: String
-  val digestQop: String
-  val digestSecret: String
-  val nonceTTL: Long
-  val basicRealm: String
   val name: String
   val mode: String
 
@@ -45,15 +40,10 @@ object Configuration {
       serverConfig.getDuration("circuit-breaker.callTimeout").toMillis millis
     val resetTimeout: FiniteDuration =
       serverConfig.getDuration("circuit-breaker.resetTimeout").toMillis millis
-    val hostname: String     = serverConfig.getString("http.host")
-    val port: Int            = serverConfig.getInt("http.port")
-    val basicRealm: String   = serverConfig.getString("auth.basic.realm")
-    val digestRealm: String  = serverConfig.getString("auth.digest.realm")
-    val digestQop: String    = serverConfig.getString("auth.digest.qop")
-    val digestSecret: String = serverConfig.getString("auth.digest.secret")
-    val authMethod: String   = serverConfig.getString("auth.method")
-    val name: String         = serverConfig.getString("name")
-    val mode                 = serverConfig.getString("http.mode")
-    val nonceTTL: Long       = serverConfig.getLong("auth.digest.nonceTTL")
+    val hostname: String   = serverConfig.getString("http.host")
+    val port: Int          = serverConfig.getInt("http.port")
+    val authMethod: String = serverConfig.getString("auth.method")
+    val name: String       = serverConfig.getString("name")
+    val mode               = serverConfig.getString("http.mode")
   }
 }

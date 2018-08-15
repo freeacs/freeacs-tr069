@@ -39,9 +39,9 @@ class Routes(
 
   val log = LoggerFactory.getLogger(getClass)
 
-  def extractAuthenticationContext(
-      route: AuthenticationContext => Route
-  ): Route =
+  type AuthenticationdRoute = AuthenticationContext => Route
+
+  def extractAuthenticationContext(route: AuthenticationdRoute): Route =
     (extractRequest & extractClientIP) { (request, remoteIp) =>
       val context: AuthenticationContext = request
       route(

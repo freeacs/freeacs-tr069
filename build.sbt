@@ -27,14 +27,14 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-caching" % akkaHttpV,
   "com.typesafe.akka" %% "akka-http-xml" % akkaHttpV,
   "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV,
-  "ch.qos.logback" % "logback-classic" % "1.2.3",
-  "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+  "com.typesafe.akka" %% "akka-cluster" % akkaV,
+  "com.typesafe.akka" %% "akka-distributed-data" % akkaV,
   "com.typesafe.slick" %% "slick" % "3.2.3",
   "com.typesafe.slick" %% "slick-hikaricp" % "3.2.3",
+  "ch.qos.logback" % "logback-classic" % "1.2.3",
   "mysql" % "mysql-connector-java" % "8.0.11",
   "com.h2database" % "h2" % "1.4.197",
   "commons-codec" % "commons-codec" % "1.11",
-  "com.typesafe.akka" %% "akka-cluster" % akkaV,
-  "com.typesafe.akka" %% "akka-distributed-data" % akkaV,
-  "com.github.jarlah" % "AuthenticScala" % "master-SNAPSHOT"
+  "com.github.jarlah" % "AuthenticScala" % "master-SNAPSHOT",
+  "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 )
