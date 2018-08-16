@@ -4,13 +4,13 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpResponse, _}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.{CircuitBreaker, CircuitBreakerOpenException}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.github.freeacs.Implicits._
 import com.github.freeacs.config.Configuration
 import com.github.freeacs.services.{AuthenticationService, Tr069Services}
 import com.github.freeacs.session.SessionService
@@ -23,6 +23,7 @@ import com.github.jarlah.authenticscala.{
 }
 import org.slf4j.LoggerFactory
 
+import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.{Failure, Success}
@@ -39,15 +40,16 @@ class Routes(
 
   val log = LoggerFactory.getLogger(getClass)
 
-  type AuthenticationdRoute = AuthenticationContext => Route
-
-  def extractAuthenticationContext(route: AuthenticationdRoute): Route =
+  def extractAuthenticationContext(
+      route: AuthenticationContext => Route
+  ): Route =
     (extractRequest & extractClientIP) { (request, remoteIp) =>
-      val context: AuthenticationContext = request
       route(
-        context.copy(
-          remoteAddress =
-            remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown")
+        AuthenticationContext(
+          request.method.value,
+          request.uri.toString(),
+          request.headers.map(h => (h.name() -> h.value())).toMap,
+          remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown")
         )
       )
     }
@@ -80,8 +82,12 @@ class Routes(
             route(maybeUser.get)
           } else {
             complete(
-              HttpResponse(Unauthorized, challenge(context, config.authMethod))
-                .withEntity(maybeError.getOrElse(""))
+              HttpResponse(
+                Unauthorized,
+                challenge(context, config.authMethod)
+                  .map(header => RawHeader(header._1, header._2))
+                  .to[immutable.Seq]
+              ).withEntity(maybeError.getOrElse(""))
             )
           }
         case Failure(_) =>
