@@ -73,7 +73,7 @@ class Routes(
   def authenticateConversation(route: (String) => Route): Route =
     extractAuthenticationContext { (context) =>
       onComplete(
-        authenticate(context, authService.getSecret, config.authMethod)
+        authenticate(context, authService.getSecret _, config.authMethod)
       ) {
         case Success(AuthenticationResult(success, maybeUser, maybeError)) =>
           if (success && maybeUser.isDefined) {
