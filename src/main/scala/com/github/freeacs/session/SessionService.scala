@@ -28,32 +28,36 @@ class SessionService(
       username: String,
       request: SOAPRequest
   ): Future[SOAPResponse] = {
-    (cacheActor ? GetFromCache(username)).map {
+    (cacheActor ? GetFromCache(username)).flatMap {
       case Cached(_: String, maybeState: Option[SessionState]) =>
-        maybeState
-          .map(
-            state =>
-              state.copy(
-                lastModified = System.currentTimeMillis(),
-                fsm =
-                  state.fsm.transition(request, transformer(username, services))
-            )
-          )
-          .map { state =>
-            cacheActor ! PutInCache(username, state)
-            state.fsm.currentState.response
-          }
-          .getOrElse {
-            val newState =
-              SessionState(
-                username = username,
-                lastModified = System.currentTimeMillis(),
-                fsm = FSM(ExpectInformRequest(EmptyResponse))
-                  .transition(request, transformer(username, services))
+        maybeState match {
+          case Some(state) =>
+            state.fsm
+              .transition(request, transformer(username, services))
+              .map(
+                fsm =>
+                  state.copy(
+                    lastModified = System.currentTimeMillis(),
+                    fsm = fsm
+                )
               )
-            cacheActor ! PutInCache(username, newState)
-            newState.fsm.currentState.response
-          }
+              .map { state =>
+                cacheActor ! PutInCache(username, state)
+                state.fsm.currentState.response
+              }
+          case _ =>
+            var newState = SessionState(
+              username = username,
+              lastModified = System.currentTimeMillis(),
+              fsm = FSM(ExpectInformRequest(EmptyResponse))
+            )
+            newState.fsm
+              .transition(request, transformer(username, services))
+              .map { fsm =>
+                cacheActor ! PutInCache(username, newState.copy(fsm = fsm))
+                fsm.currentState.response
+              }
+        }
     }
   }
 }
