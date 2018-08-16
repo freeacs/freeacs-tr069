@@ -46,7 +46,7 @@ class SessionService(
                 state.fsm.currentState.response
               }
           case _ =>
-            var newState = SessionState(
+            val newState = SessionState(
               username = username,
               lastModified = System.currentTimeMillis(),
               fsm = FSM(ExpectInformRequest(EmptyResponse))
