@@ -25,25 +25,22 @@ trait Configuration {
 
 object Configuration {
   def from(config: Config): Configuration =
-    new ConfigurationImpl(config)
-
-  private[this] class ConfigurationImpl(config: Config) extends Configuration {
-
-    val dbConfig             = DatabaseConfig.forConfig[JdbcProfile]("db", config)
-    private val serverConfig = config.getConfig("server")
-    val responseTimeout: FiniteDuration =
-      serverConfig.getDuration("response.timeout").toMillis millis
-    val actorTimeout: FiniteDuration =
-      serverConfig.getDuration("actor.timeout").toMillis millis
-    val maxFailures: Int = serverConfig.getInt("circuit-breaker.maxFailures")
-    val callTimeout: FiniteDuration =
-      serverConfig.getDuration("circuit-breaker.callTimeout").toMillis millis
-    val resetTimeout: FiniteDuration =
-      serverConfig.getDuration("circuit-breaker.resetTimeout").toMillis millis
-    val hostname: String   = serverConfig.getString("http.host")
-    val port: Int          = serverConfig.getInt("http.port")
-    val authMethod: String = serverConfig.getString("auth.method")
-    val name: String       = serverConfig.getString("name")
-    val mode               = serverConfig.getString("http.mode")
-  }
+    new Configuration {
+      val dbConfig     = DatabaseConfig.forConfig[JdbcProfile]("db", config)
+      private val conf = config.getConfig("server")
+      val responseTimeout: FiniteDuration =
+        conf.getDuration("response.timeout").toMillis millis
+      val actorTimeout: FiniteDuration =
+        conf.getDuration("actor.timeout").toMillis millis
+      val maxFailures: Int = conf.getInt("circuit-breaker.maxFailures")
+      val callTimeout: FiniteDuration =
+        conf.getDuration("circuit-breaker.callTimeout").toMillis millis
+      val resetTimeout: FiniteDuration =
+        conf.getDuration("circuit-breaker.resetTimeout").toMillis millis
+      val hostname: String   = conf.getString("http.host")
+      val port: Int          = conf.getInt("http.port")
+      val authMethod: String = conf.getString("auth.method")
+      val name: String       = conf.getString("name")
+      val mode               = conf.getString("http.mode")
+    }
 }

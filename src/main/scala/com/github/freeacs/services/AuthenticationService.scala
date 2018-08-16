@@ -17,34 +17,29 @@ object AuthenticationService {
   def from(
       services: Tr069Services
   )(implicit ex: ExecutionContext): AuthenticationService =
-    new AuthenticationServiceImpl(services)
+    new AuthenticationService {
+      def authenticator(
+          user: String,
+          verify: Verifier
+      ): Future[Either[String, Unit]] =
+        services.getUnitSecret(user).flatMap {
+          case Some(secret) =>
+            verify(secret).map {
+              case true => Right()
+              case _    => Left("Wrong username or password")
+            }.recover[Either[String, Unit]] {
+              case _ =>
+                Left("Error occurred while trying to verify secret")
+            }
+          case _ =>
+            Future.successful(Left("No secret found"))
+        }
 
-  private[this] class AuthenticationServiceImpl(services: Tr069Services)(
-      implicit ex: ExecutionContext
-  ) extends AuthenticationService {
-
-    def authenticator(
-        user: String,
-        verify: Verifier
-    ): Future[Either[String, Unit]] =
-      services.getUnitSecret(user).flatMap {
-        case Some(secret) =>
-          verify(secret).map {
-            case true => Right()
-            case _    => Left("Wrong username or password")
-          }.recover[Either[String, Unit]] {
-            case _ =>
-              Left("Error occurred while trying to verify secret")
-          }
-        case _ =>
-          Future.successful(Left("No secret found"))
+      def getSecret(
+          user: String
+      ): Future[String] = services.getUnitSecret(user).flatMap {
+        case Some(secret) => Future.successful(secret)
+        case _            => Future.failed(new IllegalArgumentException)
       }
-
-    def getSecret(
-        user: String
-    ): Future[String] = services.getUnitSecret(user).flatMap {
-      case Some(secret) => Future.successful(secret)
-      case _            => Future.failed(new IllegalArgumentException)
     }
-  }
 }
