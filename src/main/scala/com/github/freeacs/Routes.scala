@@ -143,26 +143,20 @@ class Routes(
       payload: Option[String]
   ) = HttpResponse(
     status = status,
-    entity = mode match {
-      case "chunked" =>
-        payload
-          .map(p => {
-            HttpEntity.Chunked(
-              ContentType.WithCharset(charset, HttpCharsets.`UTF-8`),
-              Source.single(ChunkStreamPart(p))
-            )
-          })
-          .getOrElse(HttpEntity.Empty)
-      case "delimited" =>
-        payload
-          .map(p => {
-            HttpEntity.CloseDelimited(
-              ContentType.WithCharset(charset, HttpCharsets.`UTF-8`),
-              Source.single(ByteString(p))
-            )
-          })
-          .getOrElse(HttpEntity.Empty)
-    }
+    entity = payload.map { p =>
+      mode match {
+        case "chunked" =>
+          HttpEntity.Chunked(
+            ContentType.WithCharset(charset, HttpCharsets.`UTF-8`),
+            Source.single(ChunkStreamPart(p))
+          )
+        case "delimited" =>
+          HttpEntity.CloseDelimited(
+            ContentType.WithCharset(charset, HttpCharsets.`UTF-8`),
+            Source.single(ByteString(p))
+          )
+      }
+    }.getOrElse(HttpEntity.Empty)
   )
 
 }
