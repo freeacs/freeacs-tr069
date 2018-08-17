@@ -5,13 +5,15 @@ import org.slf4j.LoggerFactory
 
 import scala.concurrent.Future
 
+final case class TransformationResult(response: SOAPResponse, state: State)
+
 final case class Transformation(
-    fn: (State, SOAPRequest) => Future[(SOAPResponse, State)]
+    fn: (State, SOAPRequest) => Future[TransformationResult]
 ) {
   def apply(
       currentState: State,
       request: SOAPRequest
-  ): Future[(SOAPResponse, State)] =
+  ): Future[TransformationResult] =
     fn(currentState, request)
 }
 
@@ -22,12 +24,16 @@ object Transformation {
     Transformation {
       case (ExpectInformRequest, r: InformRequest) =>
         log.info("Got INReq. Returning INRes. " + r.toString)
-        Future.successful((InformResponse(), ExpectEmptyRequest))
+        Future.successful(
+          TransformationResult(InformResponse(), ExpectEmptyRequest)
+        )
 
       case (ExpectEmptyRequest, EmptyRequest) =>
         log.info("Got EM. Returning GPNReq.")
         val response = GetParameterNamesRequest("InternetGatewayDevice.")
-        Future.successful((response, ExpectGetParameterNamesResponse))
+        Future.successful(
+          TransformationResult(response, ExpectGetParameterNamesResponse)
+        )
 
       case (ExpectGetParameterNamesResponse, r: GetParameterNamesResponse) =>
         log.info("Got GPNRes. Returning GPVReq. " + r.toString)
@@ -35,7 +41,9 @@ object Transformation {
           GetParameterValuesRequest(
             Seq(("InternetGatewayDevice.ManagementServer.Username"))
           )
-        Future.successful((response, ExpectGetParameterValuesResponse))
+        Future.successful(
+          TransformationResult(response, ExpectGetParameterValuesResponse)
+        )
 
       case (
           ExpectGetParameterValuesResponse,
@@ -43,7 +51,9 @@ object Transformation {
           ) =>
         log.info("Got GPVRes. Returning SPVReq. " + r.toString)
         val response = SetParameterValuesRequest()
-        Future.successful((response, ExpectSetParameterValuesResponse))
+        Future.successful(
+          TransformationResult(response, ExpectSetParameterValuesResponse)
+        )
 
       case (
           ExpectSetParameterValuesResponse,
@@ -51,11 +61,13 @@ object Transformation {
           ) =>
         log.info("Got SPVRes. Returning EM. " + r.toString)
         val response = EmptyResponse
-        Future.successful((response, ExpectInformRequest))
+        Future.successful(TransformationResult(response, ExpectInformRequest))
 
       case (s, r) =>
         log.error("Got weird stuff. " + s.toString + " and " + r.toString)
-        Future.successful((InvalidRequest, ExpectInformRequest))
+        Future.successful(
+          TransformationResult(InvalidRequest, ExpectInformRequest)
+        )
     }
 
 }

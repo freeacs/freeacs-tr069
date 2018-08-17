@@ -34,19 +34,15 @@ class SessionService(
           case Some(state) =>
             FSM(state.state)
               .transition(request, transformWith(username, services))
-              .map(
-                result =>
-                  (
-                    result._1,
-                    state.copy(
-                      modified = System.currentTimeMillis(),
-                      state = result._2.currentState
-                    )
-                )
-              )
               .map { result =>
-                cacheActor ! PutInCache(username, result._2)
-                result._1
+                cacheActor ! PutInCache(
+                  username,
+                  state.copy(
+                    modified = System.currentTimeMillis(),
+                    state = result.state
+                  )
+                )
+                result.response
               }
           case _ =>
             val newState = SessionState(
@@ -59,9 +55,9 @@ class SessionService(
               .map { result =>
                 cacheActor ! PutInCache(
                   username,
-                  newState.copy(state = result._2.currentState)
+                  newState.copy(state = result.state)
                 )
-                result._1
+                result.response
               }
         }
     }
