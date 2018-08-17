@@ -1,20 +1,20 @@
 package com.github.freeacs.session
 
 import akka.actor.ActorRef
+import akka.pattern.ask
+import com.github.freeacs.config.Configuration
+import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.SessionCache.{
   Cached,
   GetFromCache,
   PutInCache
 }
-import com.github.freeacs.config.Configuration
-import com.github.freeacs.services.Tr069Services
-import akka.pattern.ask
-import com.github.freeacs.state.{ExpectInformRequest, FSM}
+import com.github.freeacs.state.{FSM, FSMState, SessionState}
 import com.github.freeacs.state.Transformation._
-import com.github.freeacs.xml.{EmptyResponse, SOAPRequest, SOAPResponse}
+import com.github.freeacs.xml.{SOAPRequest, SOAPResponse}
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
 class SessionService(
     services: Tr069Services,
@@ -32,30 +32,35 @@ class SessionService(
       case Cached(_: String, maybeState: Option[SessionState]) =>
         maybeState match {
           case Some(state) =>
-            state.fsm
-              .transition(request, transformer(username, services))
+            FSM(state.fsm)
+              .transition(request, transformWith(username, services))
               .map(
-                fsm =>
-                  state.copy(
-                    lastModified = System.currentTimeMillis(),
-                    fsm = fsm
+                result =>
+                  (
+                    result._1,
+                    state
+                      .withModified(System.currentTimeMillis())
+                      .withFsm(result._2.currentState)
                 )
               )
-              .map { state =>
-                cacheActor ! PutInCache(username, state)
-                state.fsm.currentState.response
+              .map { result =>
+                cacheActor ! PutInCache(username, result._2)
+                result._1
               }
           case _ =>
             val newState = SessionState(
-              username = username,
-              lastModified = System.currentTimeMillis(),
-              fsm = FSM(ExpectInformRequest(EmptyResponse))
+              user = username,
+              modified = System.currentTimeMillis(),
+              fsm = FSMState.ExpectInformRequest
             )
-            newState.fsm
-              .transition(request, transformer(username, services))
-              .map { fsm =>
-                cacheActor ! PutInCache(username, newState.copy(fsm = fsm))
-                fsm.currentState.response
+            FSM(newState.fsm)
+              .transition(request, transformWith(username, services))
+              .map { result =>
+                cacheActor ! PutInCache(
+                  username,
+                  newState.copy(fsm = result._2.currentState)
+                )
+                result._1
               }
         }
     }

@@ -38,3 +38,10 @@ libraryDependencies ++= Seq(
   "com.github.jarlah" % "AuthenticScala" % "v1.0.3",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 )
+
+
+managedSourceDirectories in Compile += target.value / "protobuf-generated"
+
+PB.targets in Compile := Seq(
+  scalapb.gen() -> (target.value / "protobuf-generated")
+)

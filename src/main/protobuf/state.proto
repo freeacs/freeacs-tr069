@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+package com.github.freeacs;
+
+message SessionState {
+    required string user = 1;
+    required int64 modified = 2;
+    required FSMState fsm = 3 [default = ExpectInformRequest];
+}
+
+enum FSMState {
+    ExpectInformRequest = 0;
+    ExpectEmptyRequest = 1;
+    ExpectGetParameterNamesResponse = 2;
+    ExpectGetParameterValuesResponse = 3;
+    ExpectSetParameterValuesResponse = 4;
+    ExpectRebootResponse = 5;
+    Complete = 6;
+    Failed = 7;
+}
