@@ -8,7 +8,7 @@ import com.github.freeacs.xml.{SOAPRequest, SOAPResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-final case class FSM(currentState: FSMState) extends ReplicatedData {
+final case class FSM(currentState: State) extends ReplicatedData {
   def transition(
       request: SOAPRequest,
       transform: Transformation

@@ -40,8 +40,8 @@ libraryDependencies ++= Seq(
 )
 
 
-managedSourceDirectories in Compile += target.value / "protobuf-generated"
+resolvers += Resolver.bintrayRepo("julien-lafont", "maven")
 
-PB.targets in Compile := Seq(
-  scalapb.gen() -> (target.value / "protobuf-generated")
-)
+resolvers += Resolver.bintrayRepo("beyondthelines", "maven")
+
+libraryDependencies += "beyondthelines" %% "pbdirect" % "0.1.0"

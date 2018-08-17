@@ -2,7 +2,6 @@ package com.github.freeacs.session
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
 import akka.event.LoggingReceive
-import com.github.freeacs.state.SessionState
 
 import scala.concurrent.duration._
 

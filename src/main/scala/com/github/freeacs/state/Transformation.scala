@@ -1,18 +1,17 @@
 package com.github.freeacs.state
 import com.github.freeacs.services.Tr069Services
-import com.github.freeacs.state.FSMState._
 import com.github.freeacs.xml._
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Future
 
 final case class Transformation(
-    fn: (FSMState, SOAPRequest) => Future[(SOAPResponse, FSMState)]
+    fn: (State, SOAPRequest) => Future[(SOAPResponse, State)]
 ) {
   def apply(
-      currentState: FSMState,
+      currentState: State,
       request: SOAPRequest
-  ): Future[(SOAPResponse, FSMState)] =
+  ): Future[(SOAPResponse, State)] =
     fn(currentState, request)
 }
 
