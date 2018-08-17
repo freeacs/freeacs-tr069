@@ -35,7 +35,10 @@ class SessionService(
             FSM(state)
               .transition(request, transformWith(username, services))
               .map { result =>
-                cacheActor ! PutInCache(username, result.state)
+                cacheActor ! PutInCache(
+                  username,
+                  result.state.copy(modified = System.currentTimeMillis())
+                )
                 result.response
               }
           case _ =>
@@ -47,7 +50,10 @@ class SessionService(
             FSM(newState)
               .transition(request, transformWith(username, services))
               .map { result =>
-                cacheActor ! PutInCache(username, result.state)
+                cacheActor ! PutInCache(
+                  username,
+                  result.state // modified has been set above
+                )
                 result.response
               }
         }

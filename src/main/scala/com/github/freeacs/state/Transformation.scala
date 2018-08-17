@@ -34,10 +34,7 @@ object Transformation {
         Future.successful(
           TransformationResult(
             InformResponse(),
-            sessionState.copy(
-              state = ExpectEmptyRequest,
-              modified = System.currentTimeMillis()
-            )
+            sessionState.copy(state = ExpectEmptyRequest)
           )
         )
 
@@ -50,10 +47,7 @@ object Transformation {
         Future.successful(
           TransformationResult(
             response,
-            sessionState.copy(
-              state = ExpectGetParameterNamesResponse,
-              modified = System.currentTimeMillis()
-            )
+            sessionState.copy(state = ExpectGetParameterNamesResponse)
           )
         )
 
@@ -69,10 +63,7 @@ object Transformation {
         Future.successful(
           TransformationResult(
             response,
-            sessionState.copy(
-              state = ExpectGetParameterValuesResponse,
-              modified = System.currentTimeMillis()
-            )
+            sessionState.copy(state = ExpectGetParameterValuesResponse)
           )
         )
 
@@ -90,10 +81,7 @@ object Transformation {
         Future.successful(
           TransformationResult(
             response,
-            sessionState.copy(
-              state = ExpectSetParameterValuesResponse,
-              modified = System.currentTimeMillis()
-            )
+            sessionState.copy(state = ExpectSetParameterValuesResponse)
           )
         )
 
@@ -111,10 +99,7 @@ object Transformation {
         Future.successful(
           TransformationResult(
             response,
-            sessionState.copy(
-              state = ExpectInformRequest,
-              modified = System.currentTimeMillis()
-            )
+            sessionState.copy(state = ExpectInformRequest)
           )
         )
 
@@ -124,16 +109,9 @@ object Transformation {
           TransformationResult(
             InvalidRequest,
             if (sessionState.errorCount < 2)
-              sessionState.copy(
-                errorCount = (sessionState.errorCount + 1),
-                modified = System.currentTimeMillis()
-              )
+              sessionState.copy(errorCount = (sessionState.errorCount + 1))
             else
-              sessionState.copy(
-                errorCount = 0,
-                state = ExpectInformRequest,
-                modified = System.currentTimeMillis()
-              )
+              sessionState.copy(errorCount = 0, state = ExpectInformRequest)
           )
         )
     }
