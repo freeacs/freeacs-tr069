@@ -3,11 +3,12 @@
 
 package com.github.freeacs.state
 
+import com.github.freeacs.session.SessionState
 import com.github.freeacs.xml.SOAPRequest
 
 import scala.concurrent.{ExecutionContext, Future}
 
-final case class FSM(currentState: State) {
+final case class FSM(currentState: SessionState) {
   def transition(
       request: SOAPRequest,
       transform: Transformation

@@ -32,16 +32,10 @@ class SessionService(
       case Cached(_: String, maybeState: Option[SessionState]) =>
         maybeState match {
           case Some(state) =>
-            FSM(state.state)
+            FSM(state)
               .transition(request, transformWith(username, services))
               .map { result =>
-                cacheActor ! PutInCache(
-                  username,
-                  state.copy(
-                    modified = System.currentTimeMillis(),
-                    state = result.state
-                  )
-                )
+                cacheActor ! PutInCache(username, result.state)
                 result.response
               }
           case _ =>
@@ -50,13 +44,10 @@ class SessionService(
               modified = System.currentTimeMillis(),
               state = ExpectInformRequest
             )
-            FSM(newState.state)
+            FSM(newState)
               .transition(request, transformWith(username, services))
               .map { result =>
-                cacheActor ! PutInCache(
-                  username,
-                  newState.copy(state = result.state)
-                )
+                cacheActor ! PutInCache(username, result.state)
                 result.response
               }
         }
