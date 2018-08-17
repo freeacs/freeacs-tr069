@@ -28,9 +28,9 @@ object Transformation {
     Transformation {
       case (
           sessionState @ SessionState(_, _, ExpectInformRequest, _),
-          r: InformRequest
+          request: InformRequest
           ) =>
-        log.info("Got INReq. Returning INRes. " + r.toString)
+        log.info("Got INReq. Returning INRes. " + request.toString)
         Future.successful(
           TransformationResult(
             InformResponse(),
@@ -53,9 +53,9 @@ object Transformation {
 
       case (
           sessionState @ SessionState(_, _, ExpectGetParameterNamesResponse, _),
-          r: GetParameterNamesResponse
+          request: GetParameterNamesResponse
           ) =>
-        log.info("Got GPNRes. Returning GPVReq. " + r.toString)
+        log.info("Got GPNRes. Returning GPVReq. " + request.toString)
         val response =
           GetParameterValuesRequest(
             Seq(("InternetGatewayDevice.ManagementServer.Username"))
