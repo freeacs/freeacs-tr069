@@ -30,7 +30,7 @@ class SessionService(
       case Cached(_: String, maybeState: Option[SessionState]) =>
         maybeState match {
           case Some(state) =>
-            state.transition(username, services, request).map { result =>
+            state.transition(services, request).map { result =>
               cacheActor ! PutInCache(
                 username,
                 result.state.copy(modified = System.currentTimeMillis())
@@ -43,7 +43,7 @@ class SessionService(
               modified = System.currentTimeMillis(),
               state = ExpectInformRequest
             )
-            newState.transition(username, services, request).map { result =>
+            newState.transition(services, request).map { result =>
               cacheActor ! PutInCache(
                 username,
                 result.state // modified has been set above
