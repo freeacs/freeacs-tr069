@@ -1,30 +1,14 @@
-package com.github.freeacs.state
+package com.github.freeacs.session
 import com.github.freeacs.services.Tr069Services
-import com.github.freeacs.session.SessionState
 import com.github.freeacs.xml._
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.Future
 
-final case class TransformationResult(
-    response: SOAPResponse,
-    state: SessionState
-)
-
-final case class Transformation(
-    fn: (SessionState, SOAPRequest) => Future[TransformationResult]
-) {
-  def apply(
-      currentState: SessionState,
-      request: SOAPRequest
-  ): Future[TransformationResult] =
-    fn(currentState, request)
-}
-
-object Transformation {
+object SessionProtocol {
   val log = LoggerFactory.getLogger(getClass)
 
-  def transformWith(user: String, services: Tr069Services) =
+  def protocol(user: String, services: Tr069Services) =
     Transformation {
       case (
           sessionState @ SessionState(_, _, ExpectInformRequest, _),
@@ -116,4 +100,18 @@ object Transformation {
         )
     }
 
+  final case class TransformationResult(
+      response: SOAPResponse,
+      state: SessionState
+  )
+
+  final case class Transformation(
+      fn: (SessionState, SOAPRequest) => Future[TransformationResult]
+  ) {
+    def transform(
+        currentState: SessionState,
+        request: SOAPRequest
+    ): Future[TransformationResult] =
+      fn(currentState, request)
+  }
 }

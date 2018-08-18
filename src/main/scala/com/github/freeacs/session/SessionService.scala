@@ -9,8 +9,6 @@ import com.github.freeacs.session.SessionCache.{
   GetFromCache,
   PutInCache
 }
-import com.github.freeacs.state.{ExpectInformRequest, FSM}
-import com.github.freeacs.state.Transformation._
 import com.github.freeacs.xml.{SOAPRequest, SOAPResponse}
 
 import scala.concurrent.duration._
@@ -32,30 +30,26 @@ class SessionService(
       case Cached(_: String, maybeState: Option[SessionState]) =>
         maybeState match {
           case Some(state) =>
-            FSM(state)
-              .transition(request, transformWith(username, services))
-              .map { result =>
-                cacheActor ! PutInCache(
-                  username,
-                  result.state.copy(modified = System.currentTimeMillis())
-                )
-                result.response
-              }
+            state.transition(username, services, request).map { result =>
+              cacheActor ! PutInCache(
+                username,
+                result.state.copy(modified = System.currentTimeMillis())
+              )
+              result.response
+            }
           case _ =>
             val newState = SessionState(
               user = username,
               modified = System.currentTimeMillis(),
               state = ExpectInformRequest
             )
-            FSM(newState)
-              .transition(request, transformWith(username, services))
-              .map { result =>
-                cacheActor ! PutInCache(
-                  username,
-                  result.state // modified has been set above
-                )
-                result.response
-              }
+            newState.transition(username, services, request).map { result =>
+              cacheActor ! PutInCache(
+                username,
+                result.state // modified has been set above
+              )
+              result.response
+            }
         }
     }
   }
