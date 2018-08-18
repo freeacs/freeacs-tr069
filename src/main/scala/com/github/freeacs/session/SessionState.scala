@@ -10,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 final case class SessionState(
     user: String,
     modified: Long,
-    state: ExpectRequest,
+    state: State,
     errorCount: Int,
     history: List[(String, String)]
 ) extends ReplicatedData {
@@ -50,3 +50,11 @@ final case class SessionState(
       Future.successful((newState, InvalidRequest()))
   }
 }
+
+sealed trait State
+case object ExpectInformRequest              extends State
+case object ExpectEmptyRequest               extends State
+case object ExpectGetParameterNamesResponse  extends State
+case object ExpectGetParameterValuesResponse extends State
+case object ExpectSetParameterValuesResponse extends State
+case object ExpectRebootResponse             extends State
