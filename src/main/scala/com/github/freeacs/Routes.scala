@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpResponse, _}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.{CircuitBreaker, CircuitBreakerOpenException}
@@ -16,17 +15,10 @@ import com.github.freeacs.services.{AuthenticationService, Tr069Services}
 import com.github.freeacs.session.SessionService
 import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
-import com.github.jarlah.authenticscala.Authenticator._
-import com.github.jarlah.authenticscala.{
-  AuthenticationContext,
-  AuthenticationResult
-}
 import org.slf4j.LoggerFactory
 
-import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.{implicitConversions, postfixOps}
-import scala.util.{Failure, Success}
 import scala.xml.NodeSeq
 
 class Routes(
@@ -36,23 +28,10 @@ class Routes(
     config: Configuration,
     conversation: SessionService
 )(implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
-    extends Directives {
+    extends Directives
+    with Auth {
 
   val log = LoggerFactory.getLogger(getClass)
-
-  def extractAuthenticationContext(
-      route: AuthenticationContext => Route
-  ): Route =
-    (extractRequest & extractClientIP) { (request, remoteIp) =>
-      route(
-        AuthenticationContext(
-          request.method.value,
-          request.uri.toString(),
-          request.headers.map(h => (h.name() -> h.value())).toMap,
-          remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown")
-        )
-      )
-    }
 
   def routes: Route =
     get {
@@ -63,37 +42,15 @@ class Routes(
       post {
         path("tr069") {
           logRequestResult("tr069") {
-            authenticateConversation { user =>
-              entity(as[SOAPRequest]) { soapRequest =>
-                complete(handle(soapRequest, user))
-              }
+            authenticateConversation(authService.getSecret, config.authMethod) {
+              user =>
+                entity(as[SOAPRequest]) { soapRequest =>
+                  complete(handle(soapRequest, user))
+                }
             }
           }
         }
       }
-
-  def authenticateConversation(route: (String) => Route): Route =
-    extractAuthenticationContext { (context) =>
-      onComplete(
-        authenticate(context, authService.getSecret _, config.authMethod)
-      ) {
-        case Success(AuthenticationResult(success, maybeUser, maybeError)) =>
-          if (success && maybeUser.isDefined) {
-            route(maybeUser.get)
-          } else {
-            complete(
-              HttpResponse(
-                Unauthorized,
-                challenge(context, config.authMethod)
-                  .map(header => RawHeader(header._1, header._2))
-                  .to[immutable.Seq]
-              ).withEntity(maybeError.getOrElse(""))
-            )
-          }
-        case Failure(_) =>
-          complete(HttpResponse(InternalServerError))
-      }
-    }
 
   def handle(
       request: SOAPRequest,
