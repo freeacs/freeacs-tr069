@@ -8,7 +8,7 @@ import scala.concurrent.Future
 object SessionProtocol {
   val log = LoggerFactory.getLogger(getClass)
 
-  def protocol(user: String, services: Tr069Services) =
+  def protocol(services: Tr069Services) =
     Transformation {
       case (
           sessionState @ SessionState(_, _, ExpectInformRequest, _),
