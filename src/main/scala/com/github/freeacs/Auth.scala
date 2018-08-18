@@ -24,9 +24,7 @@ trait Auth { self: Directives =>
       authMethod: String
   )(route: (String) => Route)(implicit ec: ExecutionContext): Route =
     extractAuthenticationContext { (context) =>
-      onComplete(
-        authenticate(context, retriever, authMethod)
-      ) {
+      onComplete(authenticate(context, retriever, authMethod)) {
         case Success(AuthenticationResult(success, maybeUser, maybeError)) =>
           if (success && maybeUser.isDefined) {
             route(maybeUser.get)

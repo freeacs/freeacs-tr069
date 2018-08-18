@@ -1,10 +1,10 @@
 package com.github.freeacs
 
-import com.github.freeacs.services.AuthenticationService
+import com.github.freeacs.services.AuthService
 
 import scala.concurrent.Future
 
-class DummyAuthenticationService extends AuthenticationService {
+class DummyAuthService extends AuthService {
   def authenticator(
       user: String,
       verify: String => Future[Boolean]
@@ -13,5 +13,5 @@ class DummyAuthenticationService extends AuthenticationService {
 
   def getSecret(
       user: String
-  ): Future[String] = Future.successful(user)
+  ): Future[Option[String]] = Future.successful(Some(user))
 }

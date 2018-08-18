@@ -6,7 +6,7 @@ import akka.pattern.CircuitBreaker
 import akka.stream.ActorMaterializer
 import com.github.freeacs.session.{SessionCache, SessionService}
 import com.github.freeacs.config.Configuration
-import com.github.freeacs.services.{AuthenticationService, Tr069Services}
+import com.github.freeacs.services.{AuthService, Tr069Services}
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.ExecutionContextExecutor
@@ -22,11 +22,15 @@ trait Server {
 
   import config._
 
-  val breaker =
-    new CircuitBreaker(system.scheduler, maxFailures, callTimeout, resetTimeout)
+  val breaker = new CircuitBreaker(
+    system.scheduler,
+    maxFailures,
+    callTimeout,
+    resetTimeout
+  )
 
   val services     = Tr069Services.from(dbConfig)
-  val authService  = AuthenticationService.from(services)
+  val authService  = AuthService.from(services)
   val cacheActor   = system.actorOf(SessionCache.props)
   val conversation = new SessionService(services, config, cacheActor)
 

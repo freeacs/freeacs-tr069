@@ -2,22 +2,22 @@ package com.github.freeacs.services
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait AuthenticationService {
+trait AuthService {
   def authenticator(
       user: String,
       verify: (String) => Future[Boolean]
   ): Future[Either[String, Unit]]
 
-  def getSecret(user: String): Future[String]
+  def getSecret(user: String): Future[Option[String]]
 }
 
-object AuthenticationService {
+object AuthService {
   type Verifier = String => Future[Boolean]
 
   def from(
       services: Tr069Services
-  )(implicit ex: ExecutionContext): AuthenticationService =
-    new AuthenticationService {
+  )(implicit ex: ExecutionContext): AuthService =
+    new AuthService {
       def authenticator(
           user: String,
           verify: Verifier
@@ -35,11 +35,7 @@ object AuthenticationService {
             Future.successful(Left("No secret found"))
         }
 
-      def getSecret(
-          user: String
-      ): Future[String] = services.getUnitSecret(user).flatMap {
-        case Some(secret) => Future.successful(secret)
-        case _            => Future.failed(new IllegalArgumentException)
-      }
+      def getSecret(user: String): Future[Option[String]] =
+        services.getUnitSecret(user)
     }
 }

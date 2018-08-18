@@ -12,7 +12,7 @@ import org.scalatest.{Matchers, WordSpec}
 import scala.concurrent.duration.FiniteDuration
 
 class AppSpec extends WordSpec with Matchers with ScalatestRouteTest {
-  val authenticationService = new DummyAuthenticationService()
+  val authenticationService = new DummyAuthService()
   val duration              = FiniteDuration(1, TimeUnit.SECONDS)
   val breaker               = new CircuitBreaker(system.scheduler, 1, duration, duration)
   val responseTimeout       = FiniteDuration(1, TimeUnit.SECONDS)

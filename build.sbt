@@ -35,7 +35,7 @@ libraryDependencies ++= Seq(
   "mysql" % "mysql-connector-java" % "8.0.11",
   "com.h2database" % "h2" % "1.4.197",
   "commons-codec" % "commons-codec" % "1.11",
-  "com.github.jarlah" % "AuthenticScala" % "v1.0.3",
+  "com.github.jarlah" % "AuthenticScala" % "-SNAPSHOT",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 )
 
