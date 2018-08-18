@@ -20,10 +20,9 @@ final case class SessionState(
     if (that.modified > this.modified) that else this
 
   def transition(
-      user: String,
       services: Tr069Services,
       request: SOAPRequest
   )(implicit ec: ExecutionContext): Future[TransformationResult] =
-    SessionProtocol.protocol(user, services).transform(this, request)
+    SessionProtocol.protocol(services).transform(this, request)
 
 }
