@@ -22,7 +22,7 @@ object EmptyMethod extends SessionMethod[EmptyRequest] {
       (
         sessionState.copy(
           state = ExpectGetParameterNamesResponse,
-          history = (sessionState.history :+ "EM->GPNReq")
+          history = (sessionState.history :+ ("EM", "GPNReq"))
         ),
         response
       )

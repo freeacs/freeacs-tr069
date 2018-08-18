@@ -3,6 +3,8 @@ package com.github.freeacs.session
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata.protobuf.SerializationSupport
 import akka.serialization.Serializer
+import cats.instances.list._
+import cats.instances.option._
 import pbdirect._
 
 class SessionStateSerializer(val system: ExtendedActorSystem)

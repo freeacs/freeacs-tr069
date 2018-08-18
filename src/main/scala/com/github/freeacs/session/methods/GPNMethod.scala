@@ -25,7 +25,7 @@ object GPNMethod extends SessionMethod[GetParameterNamesResponse] {
       (
         sessionState.copy(
           state = ExpectGetParameterValuesResponse,
-          history = (sessionState.history :+ "GPNRes->GPVReq")
+          history = (sessionState.history :+ ("GPNRes", "GPVReq"))
         ),
         response
       )

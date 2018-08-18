@@ -12,7 +12,7 @@ final case class SessionState(
     modified: Long,
     state: ExpectRequest,
     errorCount: Int,
-    history: List[String]
+    history: List[(String, String)]
 ) extends ReplicatedData {
 
   type T = SessionState

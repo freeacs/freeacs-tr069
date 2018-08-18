@@ -14,7 +14,7 @@ object InformMethod extends SessionMethod[InformRequest] {
       (
         sessionState.copy(
           state = ExpectEmptyRequest,
-          history = (sessionState.history :+ "INReq->INRes")
+          history = (sessionState.history :+ ("INReq", "INRes"))
         ),
         InformResponse()
       )

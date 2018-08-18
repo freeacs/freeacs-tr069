@@ -22,7 +22,7 @@ object GPVMethod extends SessionMethod[GetParameterValuesResponse] {
       (
         sessionState.copy(
           state = ExpectSetParameterValuesResponse,
-          history = (sessionState.history :+ "GPVRes->SPVReq")
+          history = (sessionState.history :+ ("GPVRes", "SPVReq"))
         ),
         response
       )

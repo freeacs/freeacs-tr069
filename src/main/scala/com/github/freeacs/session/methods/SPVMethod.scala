@@ -14,7 +14,7 @@ object SPVMethod extends SessionMethod[SetParameterValuesResponse] {
       sessionState: SessionState
   ): Future[(SessionState, SOAPResponse)] = {
     log.info("Got SPVRes. Returning EM. " + request.toString)
-    val history = sessionState.history :+ "SPVRes->EM"
+    val history = sessionState.history :+ ("SPVRes", "EM")
     log.info("Event: " + history.mkString(", "))
     val response = EmptyResponse()
     Future.successful(
