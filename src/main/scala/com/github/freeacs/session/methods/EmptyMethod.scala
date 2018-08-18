@@ -1,4 +1,5 @@
 package com.github.freeacs.session.methods
+import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.{
   ExpectGetParameterNamesResponse,
   SessionState
@@ -9,13 +10,14 @@ import com.github.freeacs.xml.{
   SOAPResponse
 }
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-object EmptyMethod extends SessionMethod[EmptyRequest] {
+object EmptyMethod extends AbstractMethod[EmptyRequest] {
   def process(
       request: EmptyRequest,
-      sessionState: SessionState
-  ): Future[(SessionState, SOAPResponse)] = {
+      sessionState: SessionState,
+      services: Tr069Services
+  )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
     log.info("Got EM. Returning GPNReq.")
     val response = GetParameterNamesRequest("InternetGatewayDevice.")
     Future.successful(

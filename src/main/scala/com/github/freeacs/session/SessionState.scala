@@ -24,22 +24,22 @@ final case class SessionState(
       implicit ec: ExecutionContext
   ): Future[(SessionState, SOAPResponse)] = request match {
     case request: InformRequest if state == ExpectInformRequest =>
-      InformMethod.process(request, this)
+      InformMethod.process(request, this, services)
 
     case request: EmptyRequest if state == ExpectEmptyRequest =>
-      EmptyMethod.process(request, this)
+      EmptyMethod.process(request, this, services)
 
     case request: GetParameterNamesResponse
         if state == ExpectGetParameterNamesResponse =>
-      GPNMethod.process(request, this)
+      GPNMethod.process(request, this, services)
 
     case request: GetParameterValuesResponse
         if state == ExpectGetParameterValuesResponse =>
-      GPVMethod.process(request, this)
+      GPVMethod.process(request, this, services)
 
     case request: SetParameterValuesResponse
         if state == ExpectSetParameterValuesResponse =>
-      SPVMethod.process(request, this)
+      SPVMethod.process(request, this, services)
 
     case _ =>
       val newState =

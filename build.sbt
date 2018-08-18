@@ -40,7 +40,7 @@ libraryDependencies ++= Seq(
 )
 
 
-resolvers += Resolver.bintrayRepo("julien-lafont", "maven")
+resolvers += Resolver.bintrayRepo("julien-lafont", "maven") 
 
 resolvers += Resolver.bintrayRepo("beyondthelines", "maven")
 

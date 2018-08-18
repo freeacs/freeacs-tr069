@@ -1,4 +1,5 @@
 package com.github.freeacs.session.methods
+import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.{
   ExpectSetParameterValuesResponse,
   SessionState
@@ -9,13 +10,14 @@ import com.github.freeacs.xml.{
   SetParameterValuesRequest
 }
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-object GPVMethod extends SessionMethod[GetParameterValuesResponse] {
+object GPVMethod extends AbstractMethod[GetParameterValuesResponse] {
   def process(
       request: GetParameterValuesResponse,
-      sessionState: SessionState
-  ): Future[(SessionState, SOAPResponse)] = {
+      sessionState: SessionState,
+      services: Tr069Services
+  )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
     log.info("Got GPVRes. Returning SPVReq. " + request.toString)
     val response = SetParameterValuesRequest()
     Future.successful(
