@@ -8,7 +8,7 @@ final case class InformRequest(
     params: Seq[ParameterValueStruct]
 ) extends SOAPRequest
 
-case object EmptyRequest extends SOAPRequest
+case class EmptyRequest() extends SOAPRequest
 
 case class GetParameterNamesResponse(params: Seq[(String, Boolean)])
     extends SOAPRequest

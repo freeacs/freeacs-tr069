@@ -23,7 +23,7 @@ object Marshallers extends ScalaXmlSupport {
         Right(GetParameterValuesXml.marshal(gpv))
       case spv: SetParameterValuesRequest =>
         Right(SetParameterValuesXml.marshal(spv))
-      case response @ (InvalidRequest | EmptyResponse) =>
+      case response @ (InvalidRequest() | EmptyResponse()) =>
         Left(response)
     }
 
@@ -34,7 +34,7 @@ object Marshallers extends ScalaXmlSupport {
       if (data.nonEmpty)
         parseSOAPRequest(XML.loadString(decodeData(data, charset)))
       else
-        EmptyRequest
+        EmptyRequest()
     }
 
   def parseSOAPRequest(xml: Elem): SOAPRequest =
@@ -48,7 +48,7 @@ object Marshallers extends ScalaXmlSupport {
       case SOAPMethod.SetParameterValuesResponse =>
         SetParameterValuesXml.unMarshal(xml)
       case SOAPMethod.Empty =>
-        EmptyRequest
+        EmptyRequest()
     }
 
   def parseMethod(xml: Elem): SOAPMethod.Value =

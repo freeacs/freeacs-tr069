@@ -67,7 +67,7 @@ class Routes(
               config.mode,
               Some(elm.toString())
             )
-          case Left(InvalidRequest) =>
+          case Left(InvalidRequest()) =>
             makeHttpResponse(
               BadRequest,
               MediaTypes.`text/plain`,

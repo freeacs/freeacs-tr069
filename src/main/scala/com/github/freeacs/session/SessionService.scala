@@ -33,22 +33,20 @@ class SessionService(
             state.transition(services, request).map { result =>
               cacheActor ! PutInCache(
                 username,
-                result.state.copy(modified = System.currentTimeMillis())
+                result._1.copy(modified = System.currentTimeMillis())
               )
-              result.response
+              result._2
             }
           case _ =>
-            val newState = SessionState(
+            SessionState(
               user = username,
               modified = System.currentTimeMillis(),
-              state = ExpectInformRequest
-            )
-            newState.transition(services, request).map { result =>
-              cacheActor ! PutInCache(
-                username,
-                result.state // modified has been set above
-              )
-              result.response
+              state = ExpectInformRequest,
+              history = List.empty,
+              errorCount = 0
+            ).transition(services, request).map { result =>
+              cacheActor ! PutInCache(username, result._1)
+              result._2
             }
         }
     }
