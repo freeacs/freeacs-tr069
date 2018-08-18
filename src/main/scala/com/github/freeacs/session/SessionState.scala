@@ -46,7 +46,11 @@ final case class SessionState(
         if (errorCount < 2)
           copy(errorCount = (errorCount + 1))
         else
-          copy(errorCount = 0, state = ExpectInformRequest)
+          copy(
+            errorCount = 0,
+            state = ExpectInformRequest,
+            history = List.empty
+          )
       Future.successful((newState, InvalidRequest()))
   }
 }
