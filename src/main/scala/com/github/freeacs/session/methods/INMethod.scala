@@ -19,51 +19,44 @@ object INMethod extends AbstractMethod[InformRequest] {
     val cpeParams = InformParams(request.params)
     services
       .getUnit(sessionState.user)
-      .map(
-        state =>
-          sessionState.copy(
-            unitTypeId = state.flatMap(_.unitType.unitTypeId),
-            profileId = state.flatMap(_.profile.profileId),
-            unitTypeParams = state
-              .map(
-                _.unitType.params
-                  .map(
-                    p =>
-                      (
-                        p.unitTypeParamId,
-                        p.name,
-                        p.flags,
-                        p.unitTypeId
-                    )
-                  )
-                  .toList
-              )
-              .getOrElse(List.empty)
-        )
-      )
-      .flatMap(
-        stateWithUnitInfo =>
-          if (stateWithUnitInfo.unitTypeId.isDefined && stateWithUnitInfo.unitTypeParams.nonEmpty) {
-            services
-              .createOrUpdateUnitParameters(
-                Seq(
-                  (
-                    stateWithUnitInfo.user,
-                    cpeParams.swVersion.map(_.value).getOrElse(""),
-                    stateWithUnitInfo.unitTypeParams
-                      .find(p => {
-                        p._2 == cpeParams.swVersion.map(_.name).get
-                      })
-                      .flatMap(_._1)
-                      .get
-                  )
+      .map { state =>
+        sessionState.copy(
+          unitTypeId = state.flatMap(_.unitType.unitTypeId),
+          profileId = state.flatMap(_.profile.profileId),
+          unitTypeParams = state
+            .map(
+              _.unitType.params.map { p =>
+                (
+                  p.unitTypeParamId,
+                  p.name,
+                  p.flags,
+                  p.unitTypeId
                 )
+              }.toList
+            )
+            .getOrElse(List.empty)
+        )
+      }
+      .flatMap { stateWithUnitInfo =>
+        if (stateWithUnitInfo.unitTypeId.isDefined && stateWithUnitInfo.unitTypeParams.nonEmpty) {
+          services.createOrUpdateUnitParameters {
+            Seq(
+              (
+                stateWithUnitInfo.user,
+                cpeParams.swVersion.map(_.value).getOrElse(""),
+                stateWithUnitInfo.unitTypeParams
+                  .find(p => {
+                    p._2 == cpeParams.swVersion.map(_.name).get
+                  })
+                  .flatMap(_._1)
+                  .get
               )
-              .map(_ => stateWithUnitInfo)
-          } else {
-            Future.successful(stateWithUnitInfo)
+            )
+          }.map(_ => stateWithUnitInfo)
+        } else {
+          Future.successful(stateWithUnitInfo)
         }
-      )
+      }
       .map(stateWithUnitInfo => {
         log.info("Got INReq. Returning INRes. " + request.toString)
         log.info("Params: " + cpeParams)
