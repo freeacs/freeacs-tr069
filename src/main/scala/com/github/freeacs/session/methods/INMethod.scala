@@ -17,61 +17,61 @@ object INMethod extends AbstractMethod[InformRequest] {
       services: Tr069Services
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
     val cpeParams = InformParams(request.params)
-    services
-      .getUnit(sessionState.user)
-      .map {
-        case Some(unit) =>
-          services.getUnitTypeParameters(unit.unitType.unitTypeId.get).map {
-            params =>
-              (Some(unit), params)
-          }
-        case _ =>
-          Future.successful((None, Seq.empty))
-      }
-      .flatMap(
-        f =>
-          f.map(
-            result =>
-              sessionState.copy(
-                unitTypeId = result._1.flatMap(_.unitType.unitTypeId),
-                profileId = result._1.flatMap(_.profile.profileId),
-                unitTypeParams = result._2.toList
-            )
-        )
-      )
-      .flatMap { state =>
-        if (state.unitTypeId.isDefined && state.unitTypeParams.nonEmpty) {
-          val maybeTuple = state.unitTypeParams.find(p => {
-            p._2 == cpeParams.swVersion.map(_.name).get
-          })
+    (for {
+      stateWithUnitInfo <- (for {
+                            maybeUnit <- services.getUnit(sessionState.user)
+                            utpParams <- maybeUnit
+                                          .map(
+                                            unit =>
+                                              services.getUnitTypeParameters(
+                                                unit.unitType.unitTypeId.get
+                                            )
+                                          )
+                                          .getOrElse(
+                                            Future.successful(Seq.empty)
+                                          )
+                          } yield
+                            sessionState.copy(
+                              unitTypeId =
+                                maybeUnit.flatMap(_.unitType.unitTypeId),
+                              profileId = maybeUnit.flatMap(_.profile.profileId),
+                              unitTypeParams = utpParams.toList
+                            ))
+      _ <- {
+        if (stateWithUnitInfo.unitTypeId.isDefined && stateWithUnitInfo.unitTypeParams.nonEmpty) {
           services
             .createOrUpdateUnitParameters(
               Seq(
                 (
-                  state.user,
+                  stateWithUnitInfo.user,
                   cpeParams.swVersion.map(_.value).getOrElse(""),
-                  maybeTuple.flatMap(_._1).get
+                  stateWithUnitInfo.unitTypeParams
+                    .find(p => {
+                      p._2 == cpeParams.swVersion.map(_.name).get
+                    })
+                    .flatMap(_._1)
+                    .get
                 )
               )
             )
-            .map(_ => state)
+            .map(_ => stateWithUnitInfo)
         } else {
-          Future.successful(state)
+          Future.successful(stateWithUnitInfo)
         }
       }
-      .map { state =>
-        log.info("Got INReq. Returning INRes. " + request.toString)
-        log.info("Params: " + cpeParams)
-        (
-          state.copy(
-            state = ExpectEmptyRequest,
-            history = (state.history :+ ("INReq", "INRes")),
-            softwareVersion = cpeParams.swVersion.map(_.value),
-            serialNumber = Option(request.deviceId.serialNumber)
-          ),
-          InformResponse()
-        )
-      }
+    } yield {
+      log.info("Got INReq. Returning INRes. " + request.toString)
+      log.info("Params: " + cpeParams)
+      (
+        stateWithUnitInfo.copy(
+          state = ExpectEmptyRequest,
+          history = (stateWithUnitInfo.history :+ ("INReq", "INRes")),
+          softwareVersion = cpeParams.swVersion.map(_.value),
+          serialNumber = Option(request.deviceId.serialNumber)
+        ),
+        InformResponse()
+      )
+    })
   }
 }
 
