@@ -37,24 +37,21 @@ object INMethod extends AbstractMethod[InformRequest] {
             .getOrElse(List.empty)
         )
       }
-      .flatMap { stateWithUnitInfo =>
-        if (stateWithUnitInfo.unitTypeId.isDefined && stateWithUnitInfo.unitTypeParams.nonEmpty) {
+      .flatMap { state =>
+        if (state.unitTypeId.isDefined && state.unitTypeParams.nonEmpty)
           services.createOrUpdateUnitParameters {
-            Seq(
+            Seq {
               (
-                stateWithUnitInfo.user,
+                state.user,
                 cpeParams.swVersion.map(_.value).getOrElse(""),
-                stateWithUnitInfo.unitTypeParams
-                  .find(p => {
-                    p._2 == cpeParams.swVersion.map(_.name).get
-                  })
-                  .flatMap(_._1)
-                  .get
+                state.unitTypeParams.find { p =>
+                  p._2 == cpeParams.swVersion.map(_.name).get
+                }.flatMap(_._1).get
               )
-            )
-          }.map(_ => stateWithUnitInfo)
-        } else {
-          Future.successful(stateWithUnitInfo)
+            }
+          }.map(_ => state)
+        else {
+          Future.successful(state)
         }
       }
       .map(stateWithUnitInfo => {
