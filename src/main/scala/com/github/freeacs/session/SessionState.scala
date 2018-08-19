@@ -17,6 +17,7 @@ final case class SessionState(
     profileId: Option[Long] = None,
     softwareVersion: Option[String] = None,
     serialNumber: Option[String] = None,
+    unitParams: List[(Option[Long], String, Option[String])] = List.empty,
     unitTypeParams: List[(Option[Long], String, String, Long)] = List.empty
 ) extends ReplicatedData {
 

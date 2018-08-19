@@ -26,8 +26,20 @@ object INMethod extends AbstractMethod[InformRequest] {
       .map { unit =>
         sessionState.copy(
           serialNumber = Option(request.deviceId.serialNumber),
+          softwareVersion = cpeParams.swVersion.map(_.value),
           unitTypeId = unit.flatMap(_.unitType.unitTypeId),
           profileId = unit.flatMap(_.profile.profileId),
+          unitParams = unit
+            .map(
+              _.params.map { p =>
+                (
+                  p.unitTypeParameter.unitTypeParamId,
+                  p.unitTypeParameter.name,
+                  p.value
+                )
+              }.toList
+            )
+            .getOrElse(List.empty),
           unitTypeParams = unit
             .map(
               _.unitType.params.map { p =>
@@ -53,9 +65,7 @@ object INMethod extends AbstractMethod[InformRequest] {
         (
           state.copy(
             state = ExpectEmptyRequest,
-            history = (state.history :+ ("INReq", "INRes")),
-            softwareVersion = cpeParams.swVersion.map(_.value),
-            serialNumber = Option(request.deviceId.serialNumber)
+            history = (state.history :+ ("INReq", "INRes"))
           ),
           InformResponse()
         )

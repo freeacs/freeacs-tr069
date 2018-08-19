@@ -111,6 +111,10 @@ object Tr069Services {
                   )
                 )
               )
+            }.flatMap {
+              case Some(domainUnit) =>
+                getUnitParameters(domainUnit.unitId)
+                  .map(params => Some(domainUnit.copy(params = params)))
             }
           case _ =>
             Future.successful(None)
