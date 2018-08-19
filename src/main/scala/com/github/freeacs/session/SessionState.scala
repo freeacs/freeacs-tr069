@@ -2,17 +2,31 @@ package com.github.freeacs.session
 
 import akka.cluster.ddata.ReplicatedData
 import com.github.freeacs.services.Tr069Services
+import com.github.freeacs.session.SessionState._
 import com.github.freeacs.session.methods._
 import com.github.freeacs.xml._
 
 import scala.concurrent.{ExecutionContext, Future}
 
+object SessionState {
+  type UnitParameterType     = (Option[Long], String, Option[String])
+  type UnitTypeParameterType = (Option[Long], String, String, Long)
+  type HistoryType           = (String, String)
+}
+
 final case class SessionState(
     user: String,
     modified: Long,
     state: State,
-    errorCount: Int,
-    history: List[(String, String)]
+    remoteAddress: String,
+    errorCount: Int = 0,
+    history: List[HistoryType] = List.empty,
+    unitTypeId: Option[Long] = None,
+    profileId: Option[Long] = None,
+    softwareVersion: Option[String] = None,
+    serialNumber: Option[String] = None,
+    unitParams: List[UnitParameterType] = List.empty,
+    unitTypeParams: List[UnitTypeParameterType] = List.empty
 ) extends ReplicatedData {
 
   type T = SessionState
@@ -24,10 +38,10 @@ final case class SessionState(
       implicit ec: ExecutionContext
   ): Future[(SessionState, SOAPResponse)] = request match {
     case request: InformRequest if state == ExpectInformRequest =>
-      InformMethod.process(request, this, services)
+      INMethod.process(request, this, services)
 
     case request: EmptyRequest if state == ExpectEmptyRequest =>
-      EmptyMethod.process(request, this, services)
+      EMMethod.process(request, this, services)
 
     case request: GetParameterNamesResponse
         if state == ExpectGetParameterNamesResponse =>

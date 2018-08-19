@@ -776,6 +776,14 @@ CREATE TABLE IF NOT EXISTS test_history (
 
 insert into unit_type(unit_type_name, protocol) values ('Generic', 'TR069') ON DUPLICATE KEY UPDATE unit_type_name=unit_type_name;
 insert into unit_type_param(unit_type_id, name, flags) values(1, 'System.X_FREEACS-COM.Secret', 'XC') ON DUPLICATE KEY UPDATE name=name;
+insert into unit_type_param(unit_type_id, name, flags) values(1, 'System.X_FREEACS-COM.LastConnectTms', 'X') ON DUPLICATE KEY UPDATE name=name;
+insert into unit_type_param(unit_type_id, name, flags) values(1, 'System.X_FREEACS-COM.FirstConnectTms', 'X') ON DUPLICATE KEY UPDATE name=name;
+insert into unit_type_param(unit_type_id, name, flags) values(1, 'System.X_FREEACS-COM.Device.SerialNumber', 'X') ON DUPLICATE KEY UPDATE name=name;
+insert into unit_type_param(unit_type_id, name, flags) values(1, 'System.X_FREEACS-COM.Device.SoftwareVersion', 'X') ON DUPLICATE KEY UPDATE name=name;
+insert into unit_type_param(unit_type_id, name, flags) values(1, 'System.X_FREEACS-COM.Device.SoftwareVersion', 'X') ON DUPLICATE KEY UPDATE name=name;
+insert into unit_type_param(unit_type_id, name, flags) values(1, 'System.X_FREEACS-COM.Device.PeriodicInterval', 'X') ON DUPLICATE KEY UPDATE name=name;
+insert into unit_type_param(unit_type_id, name, flags) values(1, 'System.X_FREEACS-COM.PublicIPAddress', 'X') ON DUPLICATE KEY UPDATE name=name;
+insert into unit_type_param(unit_type_id, name, flags) values(1, 'InternetGatewayDevice.DeviceInfo.SoftwareVersion', 'RW') ON DUPLICATE KEY UPDATE name=name;
 insert into profile(profile_name, unit_type_id) values ('Default', 1) ON DUPLICATE KEY UPDATE profile_name=profile_name;
 insert into unit(unit_id, profile_id, unit_type_id) values('easycwmp', 1, 1) ON DUPLICATE KEY UPDATE unit_id=unit_id;
 insert into unit_param(unit_id, unit_type_param_id, value) values('easycwmp', 1, 'easycwmp') ON DUPLICATE KEY UPDATE unit_id=unit_id;

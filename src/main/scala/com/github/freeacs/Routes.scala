@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.{Marshal, ToResponseMarshallable}
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{HttpResponse, _}
 import akka.http.scaladsl.server.{Directives, Route}
 import akka.pattern.{CircuitBreaker, CircuitBreakerOpenException}
@@ -15,8 +16,10 @@ import com.github.freeacs.services.{AuthService, Tr069Services}
 import com.github.freeacs.session.SessionService
 import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
+import com.github.jarlah.authenticscala.AuthenticationContext
 import org.slf4j.LoggerFactory
 
+import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.{implicitConversions, postfixOps}
 import scala.xml.NodeSeq
@@ -43,9 +46,9 @@ class Routes(
         path("tr069") {
           logRequestResult("tr069") {
             authenticateConversation(authService.getSecret, config.authMethod) {
-              user =>
+              case (user, context) =>
                 entity(as[SOAPRequest]) { soapRequest =>
-                  complete(handle(soapRequest, user))
+                  complete(handle(soapRequest, user, context))
                 }
             }
           }
@@ -54,10 +57,11 @@ class Routes(
 
   def handle(
       request: SOAPRequest,
-      user: String
+      user: String,
+      context: AuthenticationContext
   ): Future[ToResponseMarshallable] =
     breaker
-      .withCircuitBreaker(conversation.getResponse(user, request))
+      .withCircuitBreaker(conversation.getResponse(user, request, context))
       .map[ToResponseMarshallable] { response =>
         Marshal(response).to[Either[SOAPResponse, NodeSeq]].map {
           case Right(elm) =>
@@ -76,7 +80,7 @@ class Routes(
             )
           case _ =>
             makeHttpResponse(
-              OK,
+              NoContent,
               MediaTypes.`text/plain`,
               config.mode,
               None
@@ -100,6 +104,10 @@ class Routes(
       payload: Option[String]
   ) = HttpResponse(
     status = status,
+    headers = payload
+      .filter(_ => charset == MediaTypes.`text/xml`)
+      .map(_ => immutable.Seq(RawHeader("SOAPAction", "")))
+      .getOrElse(immutable.Seq.empty),
     entity = payload.map { p =>
       mode match {
         case "chunked" =>

@@ -1,11 +1,7 @@
 package com.github.freeacs.session.methods
 import com.github.freeacs.services.Tr069Services
-import com.github.freeacs.session.{ExpectInformRequest, SessionState}
-import com.github.freeacs.xml.{
-  EmptyResponse,
-  SOAPResponse,
-  SetParameterValuesResponse
-}
+import com.github.freeacs.session.SessionState
+import com.github.freeacs.xml.{SOAPResponse, SetParameterValuesResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -18,15 +14,6 @@ object SPVMethod extends AbstractMethod[SetParameterValuesResponse] {
     log.info("Got SPVRes. Returning EM. " + request.toString)
     val history = sessionState.history :+ ("SPVRes", "EM")
     log.info("Event: " + history.mkString(", "))
-    val response = EmptyResponse()
-    Future.successful(
-      (
-        sessionState.copy(
-          state = ExpectInformRequest,
-          history = List.empty
-        ),
-        response
-      )
-    )
+    Future.successful(resetConversation(sessionState))
   }
 }
