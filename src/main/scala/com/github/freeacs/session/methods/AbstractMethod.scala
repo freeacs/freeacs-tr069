@@ -20,7 +20,12 @@ trait AbstractMethod[T <: SOAPRequest] {
       sessionState: SessionState
   ): (SessionState, SOAPResponse) = {
     (
-      sessionState.copy(history = List.empty, state = ExpectInformRequest),
+      SessionState(
+        sessionState.user,
+        System.currentTimeMillis(),
+        ExpectInformRequest,
+        sessionState.remoteAddress
+      ),
       EmptyResponse()
     )
   }
