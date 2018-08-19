@@ -8,7 +8,6 @@ import com.github.freeacs.session.{
   ExpectGetParameterNamesResponse,
   SessionState
 }
-import com.github.freeacs.vo.ParameterValueVO
 import com.github.freeacs.xml.{
   EmptyRequest,
   GetParameterNamesRequest,
@@ -67,20 +66,20 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
   private def getSystemParameters(
       sessionState: SessionState,
       services: Tr069Services
-  )(implicit ec: ExecutionContext): Future[List[ParameterValueVO]] = {
+  )(implicit ec: ExecutionContext): Future[List[(String, String)]] = {
     services.getUnitParameters(sessionState.user).map { unitParams =>
-      var systemParameters = List[ParameterValueVO]()
+      var systemParameters = List[(String, String)]()
 
       val currentTimestamp = LocalDateTime
         .now()
         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
-      systemParameters = systemParameters :+ ParameterValueVO(
+      systemParameters = systemParameters :+ (
         SystemParameters.LAST_CONNECT_TMS,
         currentTimestamp
       )
 
-      systemParameters = systemParameters :+ ParameterValueVO(
+      systemParameters = systemParameters :+ (
         SystemParameters.FIRST_CONNECT_TMS,
         unitParams
           .find(
@@ -90,17 +89,17 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
           .getOrElse(currentTimestamp)
       )
 
-      systemParameters = systemParameters :+ ParameterValueVO(
+      systemParameters = systemParameters :+ (
         SystemParameters.IP_ADDRESS,
         sessionState.remoteAddress
       )
 
-      systemParameters = systemParameters :+ ParameterValueVO(
+      systemParameters = systemParameters :+ (
         SystemParameters.SOFTWARE_VERSION,
         sessionState.softwareVersion.getOrElse("")
       )
 
-      systemParameters = systemParameters :+ ParameterValueVO(
+      systemParameters = systemParameters :+ (
         SystemParameters.SERIAL_NUMBER,
         sessionState.serialNumber.getOrElse("")
       )

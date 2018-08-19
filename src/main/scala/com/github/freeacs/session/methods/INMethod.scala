@@ -1,7 +1,12 @@
 package com.github.freeacs.session.methods
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.{ExpectEmptyRequest, SessionState}
-import com.github.freeacs.xml.{InformRequest, InformResponse, SOAPResponse}
+import com.github.freeacs.xml.{
+  InformRequest,
+  InformResponse,
+  ParameterValueStruct,
+  SOAPResponse
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -11,9 +16,7 @@ object INMethod extends AbstractMethod[InformRequest] {
       sessionState: SessionState,
       services: Tr069Services
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
-    val cpeParams = InformParams(
-      request.params.map(p => (p.name -> p.value)).toMap
-    )
+    val cpeParams = InformParams(request.params)
     services
       .getUnit(sessionState.user)
       .map(
@@ -41,25 +44,25 @@ object INMethod extends AbstractMethod[InformRequest] {
   }
 }
 
-final case class InformParams(params: Map[String, String]) {
+final case class InformParams(params: Seq[ParameterValueStruct]) {
 
   lazy val keyRoot: Option[String] =
     params
-      .map(p => p._1.substring(0, p._1.indexOf(".") + 1))
+      .map(p => p.name.substring(0, p.name.indexOf(".") + 1))
       .find(
         name => name.equals("Device.") || name.equals("InternetGatewayDevice.")
       )
 
-  lazy val swVersion   = getParam("DeviceInfo.SoftwareVersion")
-  lazy val perInfInt   = getParam("ManagementServer.PeriodicInformInterval")
-  lazy val connReqUrl  = getParam("ManagementServer.ConnectionRequestURL")
-  lazy val connReqUser = getParam("ManagementServer.ConnectionRequestUsername")
-  lazy val connReqPass = getParam("ManagementServer.ConnectionRequestPassword")
+  lazy val swVersion   = getValue("DeviceInfo.SoftwareVersion")
+  lazy val perInfInt   = getValue("ManagementServer.PeriodicInformInterval")
+  lazy val connReqUrl  = getValue("ManagementServer.ConnectionRequestURL")
+  lazy val connReqUser = getValue("ManagementServer.ConnectionRequestUsername")
+  lazy val connReqPass = getValue("ManagementServer.ConnectionRequestPassword")
 
-  def getParam(key: String) =
+  private[this] def getValue(key: String) =
     keyRoot
       .flatMap(
-        kr => params.find(_._1 == kr + key)
+        kr => params.find(_.name == kr + key)
       )
-      .map(_._2)
+      .map(_.value)
 }
