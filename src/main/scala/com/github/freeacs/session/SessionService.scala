@@ -40,6 +40,9 @@ class SessionService(
           case _ =>
             SessionState(
               user = username,
+              remoteAddress = null,
+              serialNumber = null,
+              softwareVersion = null,
               modified = System.currentTimeMillis(),
               state = ExpectInformRequest,
               history = List.empty,

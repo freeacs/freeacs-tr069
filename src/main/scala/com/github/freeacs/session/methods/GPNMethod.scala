@@ -18,7 +18,7 @@ object GPNMethod extends AbstractMethod[GetParameterNamesResponse] {
       sessionState: SessionState,
       services: Tr069Services
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
-    log.info("Got GPNRes. Returnirequestng GPVReq. " + request.toString)
+    log.info("Got GPNRes. Returning GPVReq. " + request.toString)
     val response =
       GetParameterValuesRequest(
         Seq(("InternetGatewayDevice.ManagementServer.Username"))

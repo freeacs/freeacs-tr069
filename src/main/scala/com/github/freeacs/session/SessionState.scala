@@ -9,10 +9,14 @@ import scala.concurrent.{ExecutionContext, Future}
 
 final case class SessionState(
     user: String,
+    remoteAddress: String,
+    softwareVersion: String,
+    serialNumber: String,
     modified: Long,
     state: State,
     errorCount: Int,
-    history: List[(String, String)]
+    history: List[(String, String)],
+    unitTypeId: Option[Long] = None
 ) extends ReplicatedData {
 
   type T = SessionState
@@ -24,10 +28,10 @@ final case class SessionState(
       implicit ec: ExecutionContext
   ): Future[(SessionState, SOAPResponse)] = request match {
     case request: InformRequest if state == ExpectInformRequest =>
-      InformMethod.process(request, this, services)
+      INMethod.process(request, this, services)
 
     case request: EmptyRequest if state == ExpectEmptyRequest =>
-      EmptyMethod.process(request, this, services)
+      EMMethod.process(request, this, services)
 
     case request: GetParameterNamesResponse
         if state == ExpectGetParameterNamesResponse =>

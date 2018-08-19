@@ -1,7 +1,7 @@
 package com.github.freeacs.session.methods
 import com.github.freeacs.services.Tr069Services
-import com.github.freeacs.session.SessionState
-import com.github.freeacs.xml.{SOAPRequest, SOAPResponse}
+import com.github.freeacs.session.{ExpectInformRequest, SessionState}
+import com.github.freeacs.xml.{EmptyResponse, SOAPRequest, SOAPResponse}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,4 +15,13 @@ trait AbstractMethod[T <: SOAPRequest] {
       state: SessionState,
       services: Tr069Services
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)]
+
+  protected[this] def resetConversation(
+      sessionState: SessionState
+  ): (SessionState, SOAPResponse) = {
+    (
+      sessionState.copy(history = List.empty, state = ExpectInformRequest),
+      EmptyResponse()
+    )
+  }
 }
