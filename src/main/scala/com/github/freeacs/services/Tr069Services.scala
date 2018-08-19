@@ -6,7 +6,7 @@ import com.github.freeacs.dao.profile.{
   Profile => ProfileDTO
 }
 import com.github.freeacs.dao.unit.{UnitDao, UnitParameterDao}
-import com.github.freeacs.dao.unitType
+import com.github.freeacs.dao.{unit, unitType}
 import com.github.freeacs.dao.unitType.{
   UnitTypeDao,
   UnitTypeParameterDao,
@@ -37,6 +37,14 @@ trait Tr069Services {
   ): Future[Seq[UnitTypeParameter]]
 
   def createUnit(userId: String): Future[Unit]
+
+  def createOrUpdateUnitParameters(
+      unitParams: Seq[(String, String, Long)]
+  ): Future[Int]
+
+  def getUnitTypeParameters(
+      unitTYpeId: Long
+  ): Future[Seq[(Option[Long], String, String, Long)]]
 }
 
 object Tr069Services {
@@ -46,12 +54,36 @@ object Tr069Services {
     new Tr069Services {
       val unitTypeRepository          = new UnitTypeDao(dbConfig)
       val unitTypeParameterRepository = new UnitTypeParameterDao(dbConfig)
+      val profileRepository           = new ProfileDao(dbConfig)
+      val profileParameterRepository  = new ProfileParameterDao(dbConfig)
+      val unitRepository              = new UnitDao(dbConfig)
+      val unitParameterRepository     = new UnitParameterDao(dbConfig)
 
-      val profileRepository          = new ProfileDao(dbConfig)
-      val profileParameterRepository = new ProfileParameterDao(dbConfig)
+      def createOrUpdateUnitParameters(
+          unitParams: Seq[(String, String, Long)]
+      ): Future[Int] = {
+        unitParameterRepository.updateUnitParameters(
+          unitParams.map(
+            up =>
+              unit.UnitParameter(
+                up._1,
+                up._3,
+                Option(up._2)
+            )
+          )
+        )
+      }
 
-      val unitRepository          = new UnitDao(dbConfig)
-      val unitParameterRepository = new UnitParameterDao(dbConfig)
+      def getUnitTypeParameters(
+          unitTYpeId: Long
+      ): Future[Seq[(Option[Long], String, String, Long)]] = {
+        unitTypeParameterRepository.readByUnitType(unitTYpeId).map { params =>
+          params.map(
+            utp =>
+              (utp.unitTypeParameterId, utp.name, utp.flags, utp.unitTypeId)
+          )
+        }
+      }
 
       def getUnitSecret(unitId: String): Future[Option[String]] =
         unitParameterRepository.getUnitSecret(unitId)

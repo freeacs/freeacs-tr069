@@ -4,7 +4,6 @@ import com.github.freeacs.dao.Dao
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
-import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 
 class UnitTypeParameterDao(val config: DatabaseConfig[JdbcProfile])(
@@ -13,6 +12,24 @@ class UnitTypeParameterDao(val config: DatabaseConfig[JdbcProfile])(
     with UnitTypeParameterTable {
 
   import config.profile.api._
+
+  def readByName(
+      name: String,
+      unitTypeId: Long
+  ): Future[Option[UnitTypeParameter]] = {
+    db.run(
+      unitTypeParameters
+        .filter(utp => utp.name === name && utp.unitTypeId === unitTypeId)
+        .result
+        .headOption
+    )
+  }
+
+  def readByUnitType(unitTypeId: Long): Future[Seq[UnitTypeParameter]] = {
+    db.run(
+      unitTypeParameters.filter(_.unitTypeId === unitTypeId).result
+    )
+  }
 
   def list(): Future[Seq[UnitTypeParameter]] =
     db.run(unitTypeParameters.result)
