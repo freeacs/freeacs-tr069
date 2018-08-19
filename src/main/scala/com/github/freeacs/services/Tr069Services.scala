@@ -91,31 +91,17 @@ object Tr069Services {
       def getUnit(unitId: String): Future[Option[Unit]] =
         unitRepository.get(unitId).flatMap {
           case Some((unit, unitType, profile)) =>
-            getUnitTypeParameters(unit.unitTypeId).map { params =>
-              Some(
-                Unit(
-                  unit.unitId,
-                  UnitType(
-                    unitType.unitTypeName,
-                    unitType.protocol,
-                    unitType.unitTypeId,
-                    unitType.matcherId,
-                    unitType.vendorName,
-                    unitType.description,
-                    params.map(p => UnitTypeParameter(p._2, p._3, p._4, p._1))
-                  ),
-                  Profile(
-                    profile.profileName,
-                    profile.unitTypeId,
-                    profile.profileId
-                  )
-                )
+            for {
+              unitTypeParams <- getUnitTypeParameters(unit.unitTypeId)
+              unitParams     <- getUnitParameters(unitId)
+            } yield
+              toDomainUnit(
+                unit,
+                unitType,
+                profile,
+                unitTypeParams,
+                unitParams
               )
-            }.flatMap {
-              case Some(domainUnit) =>
-                getUnitParameters(domainUnit.unitId)
-                  .map(params => Some(domainUnit.copy(params = params)))
-            }
           case _ =>
             Future.successful(None)
         }
@@ -213,4 +199,42 @@ object Tr069Services {
       def createUnit(userId: String): Future[Unit] = ???
     }
 
+  type UnitTypeParameterType = (Option[Long], String, String, Long)
+
+  private def toDomainUnit(
+      daoUnit: unit.Unit,
+      daoUnitType: UnitTypeDTO,
+      daoProfile: ProfileDTO,
+      unitTypeParams: Seq[UnitTypeParameterType],
+      unitParams: Seq[UnitParameter]
+  ): Some[Unit] = {
+    Some(
+      Unit(
+        daoUnit.unitId,
+        UnitType(
+          daoUnitType.unitTypeName,
+          daoUnitType.protocol,
+          daoUnitType.unitTypeId,
+          daoUnitType.matcherId,
+          daoUnitType.vendorName,
+          daoUnitType.description,
+          unitTypeParams.map(
+            p =>
+              UnitTypeParameter(
+                p._2,
+                p._3,
+                p._4,
+                p._1
+            )
+          )
+        ),
+        Profile(
+          daoProfile.profileName,
+          daoProfile.unitTypeId,
+          daoProfile.profileId
+        ),
+        unitParams
+      )
+    )
+  }
 }

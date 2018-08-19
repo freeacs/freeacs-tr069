@@ -42,10 +42,9 @@ class SessionService(
           case _ =>
             SessionState(
               user = username,
-              remoteAddress = context.remoteAddress,
               modified = System.currentTimeMillis(),
               state = ExpectInformRequest,
-              history = List.empty
+              remoteAddress = context.remoteAddress
             ).transition(services, request).map { result =>
               cacheActor ! PutInCache(username, result._1)
               result._2

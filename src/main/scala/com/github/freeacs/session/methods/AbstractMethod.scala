@@ -21,10 +21,10 @@ trait AbstractMethod[T <: SOAPRequest] {
   ): (SessionState, SOAPResponse) = {
     (
       SessionState(
-        sessionState.user,
-        System.currentTimeMillis(),
-        ExpectInformRequest,
-        sessionState.remoteAddress
+        user = sessionState.user,
+        modified = System.currentTimeMillis(),
+        state = ExpectInformRequest,
+        remoteAddress = sessionState.remoteAddress
       ),
       EmptyResponse()
     )
