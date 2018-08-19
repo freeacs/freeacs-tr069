@@ -22,12 +22,16 @@ trait Auth { self: Directives =>
   def authenticateConversation(
       retriever: PasswordRetriever,
       authMethod: String
-  )(route: (String) => Route)(implicit ec: ExecutionContext): Route =
+  )(
+      route: ((String, AuthenticationContext)) => Route
+  )(implicit ec: ExecutionContext): Route =
     extractAuthenticationContext { (context) =>
       onComplete(authenticate(context, retriever, authMethod)) {
         case Success(AuthenticationResult(success, maybeUser, maybeError)) =>
           if (success && maybeUser.isDefined) {
-            route(maybeUser.get)
+            route(
+              maybeUser.map(u => (u, context)).get
+            )
           } else {
             complete(
               HttpResponse(

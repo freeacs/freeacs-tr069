@@ -16,6 +16,7 @@ import com.github.freeacs.services.{AuthService, Tr069Services}
 import com.github.freeacs.session.SessionService
 import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
+import com.github.jarlah.authenticscala.AuthenticationContext
 import org.slf4j.LoggerFactory
 
 import scala.collection.immutable
@@ -45,9 +46,9 @@ class Routes(
         path("tr069") {
           logRequestResult("tr069") {
             authenticateConversation(authService.getSecret, config.authMethod) {
-              user =>
+              case (user, context) =>
                 entity(as[SOAPRequest]) { soapRequest =>
-                  complete(handle(soapRequest, user))
+                  complete(handle(soapRequest, user, context))
                 }
             }
           }
@@ -56,10 +57,11 @@ class Routes(
 
   def handle(
       request: SOAPRequest,
-      user: String
+      user: String,
+      context: AuthenticationContext
   ): Future[ToResponseMarshallable] =
     breaker
-      .withCircuitBreaker(conversation.getResponse(user, request))
+      .withCircuitBreaker(conversation.getResponse(user, request, context))
       .map[ToResponseMarshallable] { response =>
         Marshal(response).to[Either[SOAPResponse, NodeSeq]].map {
           case Right(elm) =>

@@ -10,6 +10,7 @@ import com.github.freeacs.session.SessionCache.{
   PutInCache
 }
 import com.github.freeacs.xml.{SOAPRequest, SOAPResponse}
+import com.github.jarlah.authenticscala.AuthenticationContext
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,7 +25,8 @@ class SessionService(
 
   def getResponse(
       username: String,
-      request: SOAPRequest
+      request: SOAPRequest,
+      context: AuthenticationContext
   ): Future[SOAPResponse] = {
     (cacheActor ? GetFromCache(username)).flatMap {
       case Cached(_: String, maybeState: Option[SessionState]) =>
@@ -40,13 +42,10 @@ class SessionService(
           case _ =>
             SessionState(
               user = username,
-              remoteAddress = null,
-              serialNumber = null,
-              softwareVersion = null,
+              remoteAddress = context.remoteAddress,
               modified = System.currentTimeMillis(),
               state = ExpectInformRequest,
-              history = List.empty,
-              errorCount = 0
+              history = List.empty
             ).transition(services, request).map { result =>
               cacheActor ! PutInCache(username, result._1)
               result._2

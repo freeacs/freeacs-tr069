@@ -14,15 +14,23 @@ object INMethod extends AbstractMethod[InformRequest] {
     services
       .getUnit(sessionState.user)
       .map(
-        _.map(unit => sessionState.copy(unitTypeId = unit.unitType.unitTypeId))
-          .getOrElse(sessionState)
+        _.map(
+          unit =>
+            sessionState.copy(
+              unitTypeId = unit.unitType.unitTypeId,
+              profileId = unit.profile.profileId
+          )
+        ).getOrElse(sessionState)
       )
       .map { state =>
         log.info("Got INReq. Returning INRes. " + request.toString)
+        log.info("Params: " + request.cpeParams)
         (
           state.copy(
             state = ExpectEmptyRequest,
-            history = (state.history :+ ("INReq", "INRes"))
+            history = (state.history :+ ("INReq", "INRes")),
+            softwareVersion = request.cpeParams.swVersion,
+            serialNumber = Option(request.deviceId.serialNumber)
           ),
           InformResponse()
         )

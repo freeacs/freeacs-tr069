@@ -4,7 +4,6 @@ import akka.cluster.ddata.ReplicatedData
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.methods._
 import com.github.freeacs.xml._
-import com.github.freeacs.domain
 import scala.concurrent.{ExecutionContext, Future}
 
 final case class SessionState(
