@@ -97,12 +97,12 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
 
       systemParameters = systemParameters :+ ParameterValueVO(
         SystemParameters.SOFTWARE_VERSION,
-        sessionState.softwareVersion
+        sessionState.softwareVersion.getOrElse("")
       )
 
       systemParameters = systemParameters :+ ParameterValueVO(
         SystemParameters.SERIAL_NUMBER,
-        sessionState.serialNumber
+        sessionState.serialNumber.getOrElse("")
       )
 
       systemParameters
