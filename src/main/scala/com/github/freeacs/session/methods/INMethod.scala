@@ -21,34 +21,36 @@ object INMethod extends AbstractMethod[InformRequest] {
       .getUnit(sessionState.user)
       .map {
         case Some(unit) =>
-          services
-            .getUnitTypeParameters(unit.unitType.unitTypeId.get)
-            .map(params => (Some(unit), params))
+          services.getUnitTypeParameters(unit.unitType.unitTypeId.get).map {
+            params =>
+              (Some(unit), params)
+          }
         case _ =>
           Future.successful((None, Seq.empty))
       }
       .flatMap(
-        _.map(
-          result =>
-            sessionState.copy(
-              unitTypeId = result._1.flatMap(_.unitType.unitTypeId),
-              profileId = result._1.flatMap(_.profile.profileId),
-              unitTypeParams = result._2.toList
-          )
+        f =>
+          f.map(
+            result =>
+              sessionState.copy(
+                unitTypeId = result._1.flatMap(_.unitType.unitTypeId),
+                profileId = result._1.flatMap(_.profile.profileId),
+                unitTypeParams = result._2.toList
+            )
         )
       )
       .flatMap { state =>
         if (state.unitTypeId.isDefined && state.unitTypeParams.nonEmpty) {
+          val maybeTuple = state.unitTypeParams.find(p => {
+            p._2 == cpeParams.swVersion.map(_.name).get
+          })
           services
             .createOrUpdateUnitParameters(
               Seq(
                 (
-                  sessionState.user,
-                  cpeParams.perInfInt.map(_.value).getOrElse(""),
-                  sessionState.unitTypeParams
-                    .find(_._2 == cpeParams.perInfInt.map(_.name))
-                    .flatMap(_._1)
-                    .get
+                  state.user,
+                  cpeParams.swVersion.map(_.value).getOrElse(""),
+                  maybeTuple.flatMap(_._1).get
                 )
               )
             )

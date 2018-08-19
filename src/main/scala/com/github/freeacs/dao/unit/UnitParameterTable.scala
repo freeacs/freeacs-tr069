@@ -19,6 +19,8 @@ trait UnitParameterTable extends UnitTypeParameterTable { this: Dao =>
 
     def value = column[String]("VALUE")
 
+    def pk = primaryKey("pk_a", (unitId, unitTypeParamId))
+
     def * =
       (unitId, unitTypeParamId, value.?) <> (UnitParameter.tupled, UnitParameter.unapply)
   }
