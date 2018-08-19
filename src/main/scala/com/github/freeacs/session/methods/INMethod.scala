@@ -73,74 +73,69 @@ object INMethod extends AbstractMethod[InformRequest] {
         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
       List(
         mkParameter(
-          state,
+          state.user,
+          state.unitTypeParams,
           LAST_CONNECT_TMS,
           currentTimestamp
         ),
         mkParameter(
-          state,
+          state.user,
+          state.unitTypeParams,
           SERIAL_NUMBER,
           state.serialNumber.getOrElse("")
         ),
         mkParameter(
-          state,
+          state.user,
+          state.unitTypeParams,
           SOFTWARE_VERSION,
           cpeParams.perInfInt.map(_.value).getOrElse("")
         ),
         mkParameter(
-          state,
+          state.user,
+          state.unitTypeParams,
           IP_ADDRESS,
           state.remoteAddress
         ),
         mkParameter(
-          state,
+          state.user,
+          state.unitTypeParams,
           PERIODIC_INTERVAL,
           cpeParams.perInfInt.map(_.value).getOrElse("")
         ),
-        mkParameter(state, cpeParams.swVersion),
-        mkParameter(state, cpeParams.perInfInt),
-        mkParameter(state, cpeParams.connReqUrl),
-        mkParameter(state, cpeParams.connReqUser),
-        mkParameter(state, cpeParams.connReqPass)
+        mkParameter(state.user, state.unitTypeParams, cpeParams.swVersion),
+        mkParameter(state.user, state.unitTypeParams, cpeParams.perInfInt),
+        mkParameter(state.user, state.unitTypeParams, cpeParams.connReqUrl),
+        mkParameter(state.user, state.unitTypeParams, cpeParams.connReqUser),
+        mkParameter(state.user, state.unitTypeParams, cpeParams.connReqPass)
       ).flatten
     }
   }
 
   private def mkParameter(
-      state: SessionState,
+      user: String,
+      unitTypeParams: List[(Option[Long], String, String, Long)],
       param: String,
       value: String
   ): List[(String, String, Long)] = {
-    state.unitTypeParams
+    unitTypeParams
       .find(p => p._2 == param)
       .map {
         case (Some(utpId), _, _, _) =>
-          List(
-            (
-              state.user,
-              value,
-              utpId
-            )
-          )
+          List((user, value, utpId))
         case _ => List.empty
       }
       .getOrElse(List.empty)
   }
 
   private def mkParameter(
-      state: SessionState,
+      user: String,
+      unitTypeParams: List[(Option[Long], String, String, Long)],
       param: Option[ParameterValueStruct]
   ): List[(String, String, Long)] = {
     param.flatMap { param =>
-      state.unitTypeParams.find(p => p._2 == param.name).map {
+      unitTypeParams.find(p => p._2 == param.name).map {
         case (Some(utpId), _, _, _) =>
-          List(
-            (
-              state.user,
-              param.value,
-              utpId
-            )
-          )
+          List((user, param.value, utpId))
         case _ => List.empty
       }
     }.getOrElse(List.empty)
