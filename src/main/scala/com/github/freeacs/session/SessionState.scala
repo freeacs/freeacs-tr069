@@ -2,9 +2,17 @@ package com.github.freeacs.session
 
 import akka.cluster.ddata.ReplicatedData
 import com.github.freeacs.services.Tr069Services
+import com.github.freeacs.session.SessionState._
 import com.github.freeacs.session.methods._
 import com.github.freeacs.xml._
+
 import scala.concurrent.{ExecutionContext, Future}
+
+object SessionState {
+  type UnitParameterType     = (Option[Long], String, Option[String])
+  type UnitTypeParameterType = (Option[Long], String, String, Long)
+  type HistoryType           = (String, String)
+}
 
 final case class SessionState(
     user: String,
@@ -12,13 +20,13 @@ final case class SessionState(
     state: State,
     remoteAddress: String,
     errorCount: Int = 0,
-    history: List[(String, String)] = List.empty,
+    history: List[HistoryType] = List.empty,
     unitTypeId: Option[Long] = None,
     profileId: Option[Long] = None,
     softwareVersion: Option[String] = None,
     serialNumber: Option[String] = None,
-    unitParams: List[(Option[Long], String, Option[String])] = List.empty,
-    unitTypeParams: List[(Option[Long], String, String, Long)] = List.empty
+    unitParams: List[UnitParameterType] = List.empty,
+    unitTypeParams: List[UnitTypeParameterType] = List.empty
 ) extends ReplicatedData {
 
   type T = SessionState

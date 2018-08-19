@@ -3,7 +3,9 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import com.github.freeacs.config.SystemParameters._
+import com.github.freeacs.domain.{UnitParameter, UnitTypeParameter}
 import com.github.freeacs.services.Tr069Services
+import com.github.freeacs.session.SessionState._
 import com.github.freeacs.session.{ExpectEmptyRequest, SessionState}
 import com.github.freeacs.xml.{
   InformRequest,
@@ -30,27 +32,10 @@ object INMethod extends AbstractMethod[InformRequest] {
           unitTypeId = unit.flatMap(_.unitType.unitTypeId),
           profileId = unit.flatMap(_.profile.profileId),
           unitParams = unit
-            .map(
-              _.params.map { p =>
-                (
-                  p.unitTypeParameter.unitTypeParamId,
-                  p.unitTypeParameter.name,
-                  p.value
-                )
-              }.toList
-            )
+            .map(_.params.map(toUnitParameterTuple).toList)
             .getOrElse(List.empty),
           unitTypeParams = unit
-            .map(
-              _.unitType.params.map { p =>
-                (
-                  p.unitTypeParamId,
-                  p.name,
-                  p.flags,
-                  p.unitTypeId
-                )
-              }.toList
-            )
+            .map(_.unitType.params.map(toUnitTypeParameterTuple).toList)
             .getOrElse(List.empty)
         )
       }
@@ -72,6 +57,26 @@ object INMethod extends AbstractMethod[InformRequest] {
       })
   }
 
+  private def toUnitParameterTuple(
+      p: UnitParameter
+  ): UnitParameterType = {
+    (
+      p.unitTypeParameter.unitTypeParamId,
+      p.unitTypeParameter.name,
+      p.value
+    )
+  }
+  private def toUnitTypeParameterTuple(
+      p: UnitTypeParameter
+  ): UnitTypeParameterType = {
+    (
+      p.unitTypeParamId,
+      p.name,
+      p.flags,
+      p.unitTypeId
+    )
+  }
+
   private def savePeriodicInform(
       services: Tr069Services,
       cpeParams: InformParams,
@@ -88,6 +93,17 @@ object INMethod extends AbstractMethod[InformRequest] {
           LAST_CONNECT_TMS,
           currentTimestamp
         ),
+        state.unitParams
+          .find(_._2 == FIRST_CONNECT_TMS)
+          .map(_ => List.empty)
+          .getOrElse(
+            mkParameter(
+              state.user,
+              state.unitTypeParams,
+              FIRST_CONNECT_TMS,
+              currentTimestamp
+            )
+          ),
         mkParameter(
           state.user,
           state.unitTypeParams,
@@ -123,7 +139,7 @@ object INMethod extends AbstractMethod[InformRequest] {
 
   private def mkParameter(
       user: String,
-      unitTypeParams: List[(Option[Long], String, String, Long)],
+      unitTypeParams: List[UnitTypeParameterType],
       param: String,
       value: String
   ): List[(String, String, Long)] = {
@@ -139,7 +155,7 @@ object INMethod extends AbstractMethod[InformRequest] {
 
   private def mkParameter(
       user: String,
-      unitTypeParams: List[(Option[Long], String, String, Long)],
+      unitTypeParams: List[UnitTypeParameterType],
       param: Option[ParameterValueStruct]
   ): List[(String, String, Long)] = {
     param.flatMap { param =>
@@ -150,35 +166,36 @@ object INMethod extends AbstractMethod[InformRequest] {
       }
     }.getOrElse(List.empty)
   }
-}
 
-final case class InformParams(params: Seq[ParameterValueStruct]) {
+  private case class InformParams(params: Seq[ParameterValueStruct]) {
 
-  lazy val keyRoot: Option[String] =
-    params
-      .map(p => p.name.substring(0, p.name.indexOf(".") + 1))
-      .find(
-        name => name.equals("Device.") || name.equals("InternetGatewayDevice.")
+    lazy val keyRoot: Option[String] =
+      params
+        .map(p => p.name.substring(0, p.name.indexOf(".") + 1))
+        .find(
+          name =>
+            name.equals("Device.") || name.equals("InternetGatewayDevice.")
+        )
+
+    lazy val swVersionKey = keyRoot.map(kr => kr + "DeviceInfo.SoftwareVersion")
+    lazy val perInfIntKey =
+      keyRoot.map(kr => kr + "ManagementServer.PeriodicInformInterval")
+    lazy val connReqUrlKey =
+      keyRoot.map(kr => kr + "ManagementServer.ConnectionRequestURL")
+    lazy val connReqUserKey =
+      keyRoot.map(kr => kr + "ManagementServer.ConnectionRequestUsername")
+    lazy val connReqPassKey =
+      keyRoot.map(kr => kr + "ManagementServer.ConnectionRequestPassword")
+
+    lazy val swVersion   = getValue(swVersionKey)
+    lazy val perInfInt   = getValue(perInfIntKey)
+    lazy val connReqUrl  = getValue(connReqUrlKey)
+    lazy val connReqUser = getValue(connReqUserKey)
+    lazy val connReqPass = getValue(connReqPassKey)
+
+    private[this] def getValue(key: Option[String]) =
+      key.flatMap(
+        k => params.find(_.name == k)
       )
-
-  lazy val swVersionKey = keyRoot.map(kr => kr + "DeviceInfo.SoftwareVersion")
-  lazy val perInfIntKey =
-    keyRoot.map(kr => kr + "ManagementServer.PeriodicInformInterval")
-  lazy val connReqUrlKey =
-    keyRoot.map(kr => kr + "ManagementServer.ConnectionRequestURL")
-  lazy val connReqUserKey =
-    keyRoot.map(kr => kr + "ManagementServer.ConnectionRequestUsername")
-  lazy val connReqPassKey =
-    keyRoot.map(kr => kr + "ManagementServer.ConnectionRequestPassword")
-
-  lazy val swVersion   = getValue(swVersionKey)
-  lazy val perInfInt   = getValue(perInfIntKey)
-  lazy val connReqUrl  = getValue(connReqUrlKey)
-  lazy val connReqUser = getValue(connReqUserKey)
-  lazy val connReqPass = getValue(connReqPassKey)
-
-  private[this] def getValue(key: Option[String]) =
-    key.flatMap(
-      k => params.find(_.name == k)
-    )
+  }
 }

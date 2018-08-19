@@ -1,8 +1,4 @@
 package com.github.freeacs.session.methods
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-
-import com.github.freeacs.config.SystemParameters
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.{
   ExpectGetParameterNamesResponse,
@@ -15,7 +11,6 @@ import com.github.freeacs.xml.{
 }
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 object EMMethod extends AbstractMethod[EmptyRequest] {
   def process(
@@ -39,12 +34,6 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
           log.info("EM-Decision is EM since unit is not found")
           resetConversation(sessionState)
         } else {
-          getSystemParameters(sessionState, services).onComplete {
-            case Success(value) =>
-              log.info(s"Found ${value.size} system parameters: $value")
-            case Failure(exception) =>
-              log.error("Failed to retrieve system parameters", exception)
-          }
           log.info("TODO: Got EM. Default behaviour is to return GPNReq.")
           val response = GetParameterNamesRequest("InternetGatewayDevice.")
           (
@@ -62,49 +51,4 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
         resetConversation(sessionState)
       }
     }
-
-  private def getSystemParameters(
-      sessionState: SessionState,
-      services: Tr069Services
-  )(implicit ec: ExecutionContext): Future[List[(String, String)]] = {
-    services.getUnitParameters(sessionState.user).map { unitParams =>
-      var systemParameters = List[(String, String)]()
-
-      val currentTimestamp = LocalDateTime
-        .now()
-        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-
-      systemParameters = systemParameters :+ (
-        SystemParameters.LAST_CONNECT_TMS,
-        currentTimestamp
-      )
-
-      systemParameters = systemParameters :+ (
-        SystemParameters.FIRST_CONNECT_TMS,
-        unitParams
-          .find(
-            _.unitTypeParameter.name == SystemParameters.FIRST_CONNECT_TMS
-          )
-          .flatMap(_.value)
-          .getOrElse(currentTimestamp)
-      )
-
-      systemParameters = systemParameters :+ (
-        SystemParameters.IP_ADDRESS,
-        sessionState.remoteAddress
-      )
-
-      systemParameters = systemParameters :+ (
-        SystemParameters.SOFTWARE_VERSION,
-        sessionState.softwareVersion.getOrElse("")
-      )
-
-      systemParameters = systemParameters :+ (
-        SystemParameters.SERIAL_NUMBER,
-        sessionState.serialNumber.getOrElse("")
-      )
-
-      systemParameters
-    }
-  }
 }
