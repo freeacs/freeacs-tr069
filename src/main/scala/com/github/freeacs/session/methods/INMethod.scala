@@ -17,61 +17,66 @@ object INMethod extends AbstractMethod[InformRequest] {
       services: Tr069Services
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
     val cpeParams = InformParams(request.params)
-    (for {
-      stateWithUnitInfo <- (for {
-                            maybeUnit <- services.getUnit(sessionState.user)
-                            utpParams <- maybeUnit
-                                          .map(
-                                            unit =>
-                                              services.getUnitTypeParameters(
-                                                unit.unitType.unitTypeId.get
-                                            )
-                                          )
-                                          .getOrElse(
-                                            Future.successful(Seq.empty)
-                                          )
-                          } yield
-                            sessionState.copy(
-                              unitTypeId =
-                                maybeUnit.flatMap(_.unitType.unitTypeId),
-                              profileId = maybeUnit.flatMap(_.profile.profileId),
-                              unitTypeParams = utpParams.toList
-                            ))
-      _ <- {
-        if (stateWithUnitInfo.unitTypeId.isDefined && stateWithUnitInfo.unitTypeParams.nonEmpty) {
-          services
-            .createOrUpdateUnitParameters(
-              Seq(
-                (
-                  stateWithUnitInfo.user,
-                  cpeParams.swVersion.map(_.value).getOrElse(""),
-                  stateWithUnitInfo.unitTypeParams
-                    .find(p => {
-                      p._2 == cpeParams.swVersion.map(_.name).get
-                    })
-                    .flatMap(_._1)
-                    .get
+    services
+      .getUnit(sessionState.user)
+      .map(
+        state =>
+          sessionState.copy(
+            unitTypeId = state.flatMap(_.unitType.unitTypeId),
+            profileId = state.flatMap(_.profile.profileId),
+            unitTypeParams = state
+              .map(
+                _.unitType.params
+                  .map(
+                    p =>
+                      (
+                        p.unitTypeParamId,
+                        p.name,
+                        p.flags,
+                        p.unitTypeId
+                    )
+                  )
+                  .toList
+              )
+              .getOrElse(List.empty)
+        )
+      )
+      .flatMap(
+        stateWithUnitInfo =>
+          if (stateWithUnitInfo.unitTypeId.isDefined && stateWithUnitInfo.unitTypeParams.nonEmpty) {
+            services
+              .createOrUpdateUnitParameters(
+                Seq(
+                  (
+                    stateWithUnitInfo.user,
+                    cpeParams.swVersion.map(_.value).getOrElse(""),
+                    stateWithUnitInfo.unitTypeParams
+                      .find(p => {
+                        p._2 == cpeParams.swVersion.map(_.name).get
+                      })
+                      .flatMap(_._1)
+                      .get
+                  )
                 )
               )
-            )
-            .map(_ => stateWithUnitInfo)
-        } else {
-          Future.successful(stateWithUnitInfo)
+              .map(_ => stateWithUnitInfo)
+          } else {
+            Future.successful(stateWithUnitInfo)
         }
-      }
-    } yield {
-      log.info("Got INReq. Returning INRes. " + request.toString)
-      log.info("Params: " + cpeParams)
-      (
-        stateWithUnitInfo.copy(
-          state = ExpectEmptyRequest,
-          history = (stateWithUnitInfo.history :+ ("INReq", "INRes")),
-          softwareVersion = cpeParams.swVersion.map(_.value),
-          serialNumber = Option(request.deviceId.serialNumber)
-        ),
-        InformResponse()
       )
-    })
+      .map(stateWithUnitInfo => {
+        log.info("Got INReq. Returning INRes. " + request.toString)
+        log.info("Params: " + cpeParams)
+        (
+          stateWithUnitInfo.copy(
+            state = ExpectEmptyRequest,
+            history = (stateWithUnitInfo.history :+ ("INReq", "INRes")),
+            softwareVersion = cpeParams.swVersion.map(_.value),
+            serialNumber = Option(request.deviceId.serialNumber)
+          ),
+          InformResponse()
+        )
+      })
   }
 }
 

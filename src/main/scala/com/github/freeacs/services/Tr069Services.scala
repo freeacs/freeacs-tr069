@@ -89,28 +89,31 @@ object Tr069Services {
         unitParameterRepository.getUnitSecret(unitId)
 
       def getUnit(unitId: String): Future[Option[Unit]] =
-        unitRepository.get(unitId).map {
+        unitRepository.get(unitId).flatMap {
           case Some((unit, unitType, profile)) =>
-            Some(
-              Unit(
-                unit.unitId,
-                UnitType(
-                  unitType.unitTypeName,
-                  unitType.protocol,
-                  unitType.unitTypeId,
-                  unitType.matcherId,
-                  unitType.vendorName,
-                  unitType.description
-                ),
-                Profile(
-                  profile.profileName,
-                  profile.unitTypeId,
-                  profile.profileId
+            getUnitTypeParameters(unit.unitTypeId).map { params =>
+              Some(
+                Unit(
+                  unit.unitId,
+                  UnitType(
+                    unitType.unitTypeName,
+                    unitType.protocol,
+                    unitType.unitTypeId,
+                    unitType.matcherId,
+                    unitType.vendorName,
+                    unitType.description,
+                    params.map(p => UnitTypeParameter(p._2, p._3, p._4, p._1))
+                  ),
+                  Profile(
+                    profile.profileName,
+                    profile.unitTypeId,
+                    profile.profileId
+                  )
                 )
               )
-            )
+            }
           case _ =>
-            None
+            Future.successful(None)
         }
 
       def getUnitParameters(unitId: String): Future[Seq[UnitParameter]] =
