@@ -5,7 +5,7 @@ import com.github.freeacs.dao.profile.ProfileDao
 import com.github.freeacs.dao.unitType.UnitTypeDao
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
-import com.github.freeacs.domain.Unit
+import com.github.freeacs.domain.ACSUnit
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -20,7 +20,7 @@ class UnitDao(val config: DatabaseConfig[JdbcProfile])(
 
   implicit val getUnitResult = GetResult(
     r =>
-      Unit(
+      ACSUnit(
         r.<<,
         unitTypeDao.getUnitTypeResult(r),
         profileDao.getProfileResult(r)
@@ -42,15 +42,15 @@ class UnitDao(val config: DatabaseConfig[JdbcProfile])(
           where  #$tableName.unit_id = '#$unitId' and
                  #$tableName.profile_id = #$profileTableName.profile_id and
                  #$tableName.unit_type_id = #$unitTypeTableName.unit_type_id;
-       """.as[Unit].headOption
+       """.as[ACSUnit].headOption
 
-  def getByUnitId(unitId: String): Future[Option[Unit]] =
+  def getByUnitId(unitId: String): Future[Option[ACSUnit]] =
     db.run(for {
       unit <- getByUnitIdQuery(unitId)
     } yield unit)
 
-  def getAllQuery: DBIO[Seq[Unit]] =
-    sql"""select #$columns from #$tableName""".as[Unit]
+  def getAllQuery: DBIO[Seq[ACSUnit]] =
+    sql"""select #$columns from #$tableName""".as[ACSUnit]
 
-  def getAll: Future[Seq[Unit]] = db.run(getAllQuery)
+  def getAll: Future[Seq[ACSUnit]] = db.run(getAllQuery)
 }

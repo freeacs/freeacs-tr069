@@ -1,6 +1,6 @@
 package com.github.freeacs.domain
 
-case class UnitTypeParameter(
+case class ACSUnitTypeParameter(
     name: String,
     flags: String,
     unitTypeId: Long,

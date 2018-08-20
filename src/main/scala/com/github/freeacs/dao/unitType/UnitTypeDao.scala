@@ -1,7 +1,7 @@
 package com.github.freeacs.dao.unitType
 
 import com.github.freeacs.dao.Dao
-import com.github.freeacs.domain.UnitType
+import com.github.freeacs.domain.ACSUnitType
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
 
@@ -14,7 +14,7 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
   import config.profile.api._
 
   implicit val getUnitTypeResult = GetResult(
-    r => UnitType(r.<<, r.<<, r.<<?, r.<<?, r.<<?, r.<<?)
+    r => ACSUnitType(r.<<, r.<<, r.<<?, r.<<?, r.<<?, r.<<?)
   )
 
   val tableName = "unit_type"
@@ -29,27 +29,27 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
       "vendor_name"
     ).map(col => s"$prefix.$col as ${prefix}_$col").mkString(", ")
 
-  def getAllQuery: DBIO[Seq[UnitType]] =
-    sql"""select #${columns("")} from #$tableName""".as[UnitType]
+  def getAllQuery: DBIO[Seq[ACSUnitType]] =
+    sql"""select #${columns("")} from #$tableName""".as[ACSUnitType]
 
-  def getAll: Future[Seq[UnitType]] = db.run(getAllQuery)
+  def getAll: Future[Seq[ACSUnitType]] = db.run(getAllQuery)
 
-  def getByIdQuery(id: Long): DBIO[Option[UnitType]] =
+  def getByIdQuery(id: Long): DBIO[Option[ACSUnitType]] =
     sql"""select #${columns("")} from #$tableName
           where unit_type_id = id
-       """.as[UnitType].headOption
+       """.as[ACSUnitType].headOption
 
-  def getById(id: Long): Future[Option[UnitType]] =
+  def getById(id: Long): Future[Option[ACSUnitType]] =
     db.run(getByIdQuery(id))
 
-  def getByNameQuery(name: String): DBIO[Option[UnitType]] =
+  def getByNameQuery(name: String): DBIO[Option[ACSUnitType]] =
     sql"""select #${columns("")} from #$tableName
           where unit_type_name = '$name'
-       """.as[UnitType].headOption
+       """.as[ACSUnitType].headOption
 
-  def getByName(name: String): Future[Option[UnitType]] =
+  def getByName(name: String): Future[Option[ACSUnitType]] =
     db.run(getByNameQuery(name))
 
-  def save(unitType: UnitType): Future[UnitType] =
+  def save(unitType: ACSUnitType): Future[ACSUnitType] =
     ???
 }

@@ -1,7 +1,7 @@
 package com.github.freeacs.dao.profile
 
 import com.github.freeacs.dao.Dao
-import com.github.freeacs.domain.Profile
+import com.github.freeacs.domain.ACSProfile
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
 
@@ -14,7 +14,7 @@ class ProfileDao(val config: DatabaseConfig[JdbcProfile])(
 
   import config.profile.api._
 
-  implicit val getProfileResult = GetResult(r => Profile(r.<<, r.<<, r.<<))
+  implicit val getProfileResult = GetResult(r => ACSProfile(r.<<, r.<<, r.<<))
 
   val tableName = "profile"
 
@@ -25,23 +25,23 @@ class ProfileDao(val config: DatabaseConfig[JdbcProfile])(
       )
       .mkString(", ")
 
-  def getAllQuery: DBIO[Seq[Profile]] =
-    sql"""select #${columns("")} from #$tableName""".as[Profile]
+  def getAllQuery: DBIO[Seq[ACSProfile]] =
+    sql"""select #${columns("")} from #$tableName""".as[ACSProfile]
 
-  def getAll: Future[Seq[Profile]] = db.run(getAllQuery)
+  def getAll: Future[Seq[ACSProfile]] = db.run(getAllQuery)
 
   def getByIdQuery(profileId: Long) =
     sql"""select #${columns("")} from #$tableName
-          where profile_id = $profileId""".as[Profile].headOption
+          where profile_id = $profileId""".as[ACSProfile].headOption
 
-  def getById(profileId: Long): Future[Option[Profile]] =
+  def getById(profileId: Long): Future[Option[ACSProfile]] =
     db.run(getByIdQuery(profileId))
 
   def getByNameQuery(profileName: String) =
     sql"""select #${columns("")} from #$tableName
           where profile_name= '$profileName'
-       """.as[Profile].headOption
+       """.as[ACSProfile].headOption
 
-  def getByName(profileName: String): Future[Option[Profile]] =
+  def getByName(profileName: String): Future[Option[ACSProfile]] =
     db.run(getByNameQuery(profileName))
 }

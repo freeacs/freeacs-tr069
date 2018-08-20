@@ -1,7 +1,7 @@
 package com.github.freeacs.domain
 
-case class UnitParameter(
+case class ACSUnitParameter(
     unitId: String,
-    unitTypeParameter: UnitTypeParameter,
+    unitTypeParameter: ACSUnitTypeParameter,
     value: Option[String]
 )
