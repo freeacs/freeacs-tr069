@@ -1,6 +1,5 @@
-package com.github.freeacs.dao.unitType
+package com.github.freeacs.repositories
 
-import com.github.freeacs.dao.Dao
 import com.github.freeacs.domain.ACSUnitType
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
@@ -19,23 +18,28 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
 
   val tableName = "unit_type"
 
-  def columns(prefix: String) =
-    Seq(
-      "unit_type_name",
-      "protocol",
-      "unit_type_id",
-      "description",
-      "matcher_id",
-      "vendor_name"
-    ).map(col => s"$prefix.$col as ${prefix}_$col").mkString(", ")
+  def columns(prefix: Option[String] = None) =
+    super.getColumns(
+      Seq(
+        "unit_type_name",
+        "protocol",
+        "unit_type_id",
+        "description",
+        "matcher_id",
+        "vendor_name"
+      ),
+      prefix
+    )
+
+  private val columnsStr = columns()
 
   def getAllQuery: DBIO[Seq[ACSUnitType]] =
-    sql"""select #${columns("")} from #$tableName""".as[ACSUnitType]
+    sql"""select #$columnsStr from #$tableName""".as[ACSUnitType]
 
   def getAll: Future[Seq[ACSUnitType]] = db.run(getAllQuery)
 
   def getByIdQuery(id: Long): DBIO[Option[ACSUnitType]] =
-    sql"""select #${columns("")} from #$tableName
+    sql"""select #$columnsStr from #$tableName
           where unit_type_id = id
        """.as[ACSUnitType].headOption
 
@@ -43,7 +47,7 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
     db.run(getByIdQuery(id))
 
   def getByNameQuery(name: String): DBIO[Option[ACSUnitType]] =
-    sql"""select #${columns("")} from #$tableName
+    sql"""select #$columnsStr from #$tableName
           where unit_type_name = '$name'
        """.as[ACSUnitType].headOption
 

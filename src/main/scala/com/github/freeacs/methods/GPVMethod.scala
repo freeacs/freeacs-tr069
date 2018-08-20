@@ -1,4 +1,4 @@
-package com.github.freeacs.session.methods
+package com.github.freeacs.methods
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.{
   ExpectSetParameterValuesResponse,

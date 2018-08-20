@@ -1,10 +1,7 @@
 package com.github.freeacs.services
 
-import com.github.freeacs.dao.profile.{ProfileDao, ProfileParameterDao}
-import com.github.freeacs.dao.unit.{UnitDao, UnitParameterDao}
-import com.github.freeacs.dao.{unit, unitType}
-import com.github.freeacs.dao.unitType.{UnitTypeDao, UnitTypeParameterDao}
 import com.github.freeacs.domain._
+import com.github.freeacs.repositories._
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
@@ -54,32 +51,13 @@ object Tr069Services {
       def createOrUpdateUnitParameters(
           unitParams: Seq[(String, String, Long)]
       ): Future[Int] = {
-        unitParameterRepository.updateUnitParameters(
-          unitParams.map(
-            up =>
-              unit.UnitParameter(
-                up._1,
-                up._3,
-                Option(up._2)
-            )
-          )
-        )
+        Future.successful(0)
       }
 
       def getUnitTypeParameters(
           unitTYpeId: Long
       ): Future[Seq[ACSUnitTypeParameter]] = {
-        unitTypeParameterRepository.readByUnitType(unitTYpeId).map { params =>
-          params.map(
-            utp =>
-              ACSUnitTypeParameter(
-                utp.name,
-                utp.flags,
-                utp.unitTypeId,
-                utp.unitTypeParameterId
-            )
-          )
-        }
+        Future.successful(Seq.empty)
       }
 
       def getUnitSecret(unitId: String): Future[Option[String]] =
@@ -89,23 +67,7 @@ object Tr069Services {
         unitRepository.getByUnitId(unitId)
 
       def getUnitParameters(unitId: String): Future[Seq[ACSUnitParameter]] =
-        unitParameterRepository
-          .getUnitParameters(unitId)
-          .map(list => {
-            list.map(
-              tuple =>
-                ACSUnitParameter(
-                  tuple._1.unitId,
-                  ACSUnitTypeParameter(
-                    tuple._2.name,
-                    tuple._2.flags,
-                    tuple._2.unitTypeId,
-                    tuple._2.unitTypeParameterId
-                  ),
-                  tuple._1.value
-              )
-            )
-          })
+        Future.successful(Seq.empty)
 
       def createUnitType(name: String): Future[ACSUnitType] =
         unitTypeRepository.save(
@@ -126,21 +88,7 @@ object Tr069Services {
           params: Seq[(String, String)],
           unitTypeId: Long
       ): Future[Seq[ACSUnitTypeParameter]] =
-        unitTypeParameterRepository
-          .save(
-            params.map(p => unitType.UnitTypeParameter(p._1, p._2, unitTypeId))
-          )
-          .map(
-            _.map(
-              p =>
-                ACSUnitTypeParameter(
-                  p.name,
-                  p.flags,
-                  p.unitTypeId,
-                  p.unitTypeParameterId
-              )
-            )
-          )
+        Future.successful(Seq.empty)
 
       def createUnit(userId: String): Future[ACSUnit] = ???
     }

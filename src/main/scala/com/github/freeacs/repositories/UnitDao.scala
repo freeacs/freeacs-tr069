@@ -1,11 +1,7 @@
-package com.github.freeacs.dao.unit
-
-import com.github.freeacs.dao.Dao
-import com.github.freeacs.dao.profile.ProfileDao
-import com.github.freeacs.dao.unitType.UnitTypeDao
+package com.github.freeacs.repositories
+import com.github.freeacs.domain.ACSUnit
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
-import com.github.freeacs.domain.ACSUnit
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -13,8 +9,9 @@ class UnitDao(val config: DatabaseConfig[JdbcProfile])(
     implicit ec: ExecutionContext
 ) extends Dao {
 
-  val unitTypeDao = new UnitTypeDao(config)
-  val profileDao  = new ProfileDao(config)
+  val unitTypeDao      = new UnitTypeDao(config)
+  val profileDao       = new ProfileDao(config)
+  val unitParameterDao = new UnitParameterDao(config)
 
   import config.profile.api._
 
@@ -30,8 +27,8 @@ class UnitDao(val config: DatabaseConfig[JdbcProfile])(
   val tableName         = "unit"
   val profileTableName  = profileDao.tableName
   val unitTypeTableName = unitTypeDao.tableName
-  val profileColumns    = profileDao.columns(profileTableName)
-  val unitTypeColumns   = unitTypeDao.columns(unitTypeTableName)
+  val profileColumns    = profileDao.columns(Some(profileTableName))
+  val unitTypeColumns   = unitTypeDao.columns(Some(unitTypeTableName))
   val columns           = s"$tableName.unit_id, $unitTypeColumns, $profileColumns"
 
   def getByUnitIdQuery(unitId: String) =
@@ -46,8 +43,9 @@ class UnitDao(val config: DatabaseConfig[JdbcProfile])(
 
   def getByUnitId(unitId: String): Future[Option[ACSUnit]] =
     db.run(for {
-      unit <- getByUnitIdQuery(unitId)
-    } yield unit)
+      unit   <- getByUnitIdQuery(unitId)
+      params <- unitParameterDao.getByUnitIdQuery(unitId)
+    } yield unit.map(_.copy(params = params)))
 
   def getAllQuery: DBIO[Seq[ACSUnit]] =
     sql"""select #$columns from #$tableName""".as[ACSUnit]
