@@ -1,7 +1,6 @@
 package com.github.freeacs.dao.unit
 
 import com.github.freeacs.dao.Dao
-import com.github.freeacs.dao.profile.{Profile, ProfileTable}
 import com.github.freeacs.dao.unitType.UnitType
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -11,8 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class UnitDao(val config: DatabaseConfig[JdbcProfile])(
     implicit ec: ExecutionContext
 ) extends Dao
-    with UnitTable
-    with ProfileTable {
+    with UnitTable {
 
   import config.profile.api._
 
@@ -24,15 +22,13 @@ class UnitDao(val config: DatabaseConfig[JdbcProfile])(
 
   def save(unit: Unit): Future[Unit] = ???
 
-  def get(unitId: String): Future[Option[(Unit, UnitType, Profile)]] =
+  def get(unitId: String): Future[Option[(Unit, UnitType)]] =
     db.run(
       units
         .filter(_.unitId === unitId)
         .join(unitTypes)
         .on(_.unitTypeId === _.unitTypeId)
-        .join(profiles)
-        .on(_._1.profileId === _.profileId)
-        .map(tuple => (tuple._1._1, tuple._1._2, tuple._2))
+        .map(tuple => (tuple._1, tuple._2))
         .result
         .headOption
     )

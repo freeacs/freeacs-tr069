@@ -1,10 +1,6 @@
 package com.github.freeacs.services
 
-import com.github.freeacs.dao.profile.{
-  ProfileDao,
-  ProfileParameterDao,
-  Profile => ProfileDTO
-}
+import com.github.freeacs.dao.profile.{ProfileDao, ProfileParameterDao}
 import com.github.freeacs.dao.unit.{UnitDao, UnitParameterDao}
 import com.github.freeacs.dao.{unit, unitType}
 import com.github.freeacs.dao.unitType.{
@@ -95,7 +91,7 @@ object Tr069Services {
 
       def getUnit(unitId: String): Future[Option[Unit]] =
         unitRepository.get(unitId).flatMap {
-          case Some((unit, unitType, profile)) =>
+          case Some((unit, unitType)) =>
             for {
               unitTypeParams <- getUnitTypeParameters(unit.unitTypeId)
               unitParams     <- getUnitParameters(unitId)
@@ -103,7 +99,7 @@ object Tr069Services {
               toDomainUnit(
                 unit,
                 unitType,
-                profile,
+                null,
                 unitTypeParams,
                 unitParams
               )
@@ -152,9 +148,7 @@ object Tr069Services {
           )
 
       def createProfile(name: String, unitTypeId: Long): Future[Profile] =
-        profileRepository
-          .save(ProfileDTO(profileName = name, unitTypeId = unitTypeId))
-          .map(dto => Profile(dto.profileName, dto.unitTypeId, dto.profileId))
+        ???
 
       def getUnitTypeByName(name: String): Future[Option[UnitType]] =
         unitTypeRepository.getByName(name).map {
@@ -207,29 +201,10 @@ object Tr069Services {
   private def toDomainUnit(
       daoUnit: unit.Unit,
       daoUnitType: UnitTypeDTO,
-      daoProfile: ProfileDTO,
+      daoProfile: Any,
       unitTypeParams: Seq[UnitTypeParameter],
       unitParams: Seq[UnitParameter]
   ): Some[Unit] = {
-    Some(
-      Unit(
-        daoUnit.unitId,
-        UnitType(
-          daoUnitType.unitTypeName,
-          daoUnitType.protocol,
-          daoUnitType.unitTypeId,
-          daoUnitType.matcherId,
-          daoUnitType.vendorName,
-          daoUnitType.description,
-          unitTypeParams
-        ),
-        Profile(
-          daoProfile.profileName,
-          daoProfile.unitTypeId,
-          daoProfile.profileId
-        ),
-        unitParams
-      )
-    )
+    ???
   }
 }

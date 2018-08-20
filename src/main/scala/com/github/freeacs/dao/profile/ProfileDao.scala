@@ -1,56 +1,40 @@
 package com.github.freeacs.dao.profile
 
 import com.github.freeacs.dao.Dao
+import com.github.freeacs.domain.Profile
 import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
+import slick.jdbc.{GetResult, JdbcProfile}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class ProfileDao(val config: DatabaseConfig[JdbcProfile])(
     implicit ec: ExecutionContext
 ) extends Dao
-    with ProfileTable
     with ProfileParameterTable {
 
   import config.profile.api._
 
-  def list(): Future[Seq[Profile]] =
-    db.run(profiles.result)
+  implicit val getProfileResult = GetResult(r => Profile(r.<<, r.<<, r.<<))
 
-  def getByNameAndUnitType(
-      name: String,
-      unitTypeId: Long
-  ): Future[Option[(Profile, Seq[ProfileParameter])]] =
-    for {
-      profile <- db.run(
-                  profiles
-                    .filter(
-                      p => p.profileName === name && p.unitTypeId === unitTypeId
-                    )
-                    .result
-                    .headOption
-                )
-      params <- {
-        if (profile.isDefined)
-          db.run(
-            profileParameters
-              .filter(pp => pp.profileId === profile.get.profileId)
-              .result
-          )
-        else
-          Future.successful(Seq.empty)
-      }
-    } yield
-      (
-        profile.map(p => {
-          (p, params)
-        })
-      )
+  val columns = "profile_name, unit_type_id, profile_id"
 
-  def save(profile: Profile): Future[Profile] =
-    db.run(
-      profiles returning profiles.map(_.profileId)
-        into ((profile, id) => profile.copy(profileId = Some(id)))
-        += profile
-    )
+  def getAllQuery: DBIO[Seq[Profile]] =
+    sql"""select #$columns from profile""".as[Profile]
+
+  def getAll: Future[Seq[Profile]] = db.run(getAllQuery)
+
+  def getByIdQuery(profileId: Long) =
+    sql"""select #$columns from profile
+          where profile_id = $profileId""".as[Profile].headOption
+
+  def getById(profileId: Long): Future[Option[Profile]] =
+    db.run(getByIdQuery(profileId))
+
+  def getByNameQuery(profileName: String) =
+    sql"""select #$columns from profile
+          where profile_name= '$profileName'
+       """.as[Profile].headOption
+
+  def getByName(profileName: String): Future[Option[Profile]] =
+    db.run(getByNameQuery(profileName))
 }
