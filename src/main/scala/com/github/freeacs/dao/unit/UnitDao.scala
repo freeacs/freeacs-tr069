@@ -27,19 +27,21 @@ class UnitDao(val config: DatabaseConfig[JdbcProfile])(
     )
   )
 
-  val tableName       = "unit"
-  val profileColumns  = profileDao.columns(profileDao.tableName)
-  val unitTypeColumns = unitTypeDao.columns(unitTypeDao.tableName)
-  val columns         = s"$tableName.unit_id, $unitTypeColumns, $profileColumns"
+  val tableName         = "unit"
+  val profileTableName  = profileDao.tableName
+  val unitTypeTableName = unitTypeDao.tableName
+  val profileColumns    = profileDao.columns(profileTableName)
+  val unitTypeColumns   = unitTypeDao.columns(unitTypeTableName)
+  val columns           = s"$tableName.unit_id, $unitTypeColumns, $profileColumns"
 
   def getByUnitIdQuery(unitId: String) =
     sql"""select #$columns
           from   #$tableName as #$tableName,
-                 #${unitTypeDao.tableName} as #${unitTypeDao.tableName},
-                 #${profileDao.tableName} as #${profileDao.tableName}
+                 #$unitTypeTableName as #$unitTypeTableName,
+                 #$profileTableName as #$profileTableName
           where  #$tableName.unit_id = '#$unitId' and
-                 #$tableName.profile_id = #${profileDao.tableName}.profile_id and
-                 #$tableName.unit_type_id = #${unitTypeDao.tableName}.unit_type_id;
+                 #$tableName.profile_id = #$profileTableName.profile_id and
+                 #$tableName.unit_type_id = #$unitTypeTableName.unit_type_id;
        """.as[Unit].headOption
 
   def getByUnitId(unitId: String): Future[Option[Unit]] =
