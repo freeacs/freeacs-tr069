@@ -27,7 +27,7 @@ object INMethod extends AbstractMethod[InformRequest] {
       .getUnit(sessionState.user)
       .map { unit =>
         sessionState.copy(
-          serialNumber = Option(request.deviceId.serialNumber),
+          serialNumber = request.serialNumber,
           softwareVersion = cpeParams.swVersion.map(_.value),
           unitTypeId = unit.flatMap(_.unitType.unitTypeId),
           profileId = unit.flatMap(_.profile.profileId),
@@ -57,7 +57,7 @@ object INMethod extends AbstractMethod[InformRequest] {
       })
   }
 
-  private def toUnitParameterTuple(
+  private[this] def toUnitParameterTuple(
       p: UnitParameter
   ): UnitParameterType = {
     (
@@ -66,7 +66,7 @@ object INMethod extends AbstractMethod[InformRequest] {
       p.value
     )
   }
-  private def toUnitTypeParameterTuple(
+  private[this] def toUnitTypeParameterTuple(
       p: UnitTypeParameter
   ): UnitTypeParameterType = {
     (
@@ -77,7 +77,7 @@ object INMethod extends AbstractMethod[InformRequest] {
     )
   }
 
-  private def savePeriodicInform(
+  private[this] def savePeriodicInform(
       services: Tr069Services,
       cpeParams: InformParams,
       state: SessionState
@@ -137,7 +137,7 @@ object INMethod extends AbstractMethod[InformRequest] {
     }
   }
 
-  private def mkParameter(
+  private[this] def mkParameter(
       user: String,
       unitTypeParams: List[UnitTypeParameterType],
       param: String,
@@ -153,7 +153,7 @@ object INMethod extends AbstractMethod[InformRequest] {
       .getOrElse(List.empty)
   }
 
-  private def mkParameter(
+  private[this] def mkParameter(
       user: String,
       unitTypeParams: List[UnitTypeParameterType],
       param: Option[ParameterValueStruct]
@@ -167,7 +167,7 @@ object INMethod extends AbstractMethod[InformRequest] {
     }.getOrElse(List.empty)
   }
 
-  private case class InformParams(params: Seq[ParameterValueStruct]) {
+  private[this] case class InformParams(params: Seq[ParameterValueStruct]) {
 
     lazy val keyRoot: Option[String] =
       params

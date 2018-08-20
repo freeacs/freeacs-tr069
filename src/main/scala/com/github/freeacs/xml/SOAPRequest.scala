@@ -6,7 +6,9 @@ final case class InformRequest(
     deviceId: DeviceIdStruct,
     eventList: Seq[EventStruct],
     params: Seq[ParameterValueStruct]
-) extends SOAPRequest
+) extends SOAPRequest {
+  val serialNumber = Option(deviceId.serialNumber)
+}
 
 case class EmptyRequest() extends SOAPRequest
 

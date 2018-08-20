@@ -44,7 +44,7 @@ trait Tr069Services {
 
   def getUnitTypeParameters(
       unitTYpeId: Long
-  ): Future[Seq[(Option[Long], String, String, Long)]]
+  ): Future[Seq[UnitTypeParameter]]
 }
 
 object Tr069Services {
@@ -76,11 +76,16 @@ object Tr069Services {
 
       def getUnitTypeParameters(
           unitTYpeId: Long
-      ): Future[Seq[(Option[Long], String, String, Long)]] = {
+      ): Future[Seq[UnitTypeParameter]] = {
         unitTypeParameterRepository.readByUnitType(unitTYpeId).map { params =>
           params.map(
             utp =>
-              (utp.unitTypeParameterId, utp.name, utp.flags, utp.unitTypeId)
+              UnitTypeParameter(
+                utp.name,
+                utp.flags,
+                utp.unitTypeId,
+                utp.unitTypeParameterId
+            )
           )
         }
       }
@@ -199,13 +204,11 @@ object Tr069Services {
       def createUnit(userId: String): Future[Unit] = ???
     }
 
-  type UnitTypeParameterType = (Option[Long], String, String, Long)
-
   private def toDomainUnit(
       daoUnit: unit.Unit,
       daoUnitType: UnitTypeDTO,
       daoProfile: ProfileDTO,
-      unitTypeParams: Seq[UnitTypeParameterType],
+      unitTypeParams: Seq[UnitTypeParameter],
       unitParams: Seq[UnitParameter]
   ): Some[Unit] = {
     Some(
@@ -218,15 +221,7 @@ object Tr069Services {
           daoUnitType.matcherId,
           daoUnitType.vendorName,
           daoUnitType.description,
-          unitTypeParams.map(
-            p =>
-              UnitTypeParameter(
-                p._2,
-                p._3,
-                p._4,
-                p._1
-            )
-          )
+          unitTypeParams
         ),
         Profile(
           daoProfile.profileName,
