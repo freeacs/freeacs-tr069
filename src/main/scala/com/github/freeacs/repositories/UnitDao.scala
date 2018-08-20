@@ -46,9 +46,4 @@ class UnitDao(val config: DatabaseConfig[JdbcProfile])(
       unit   <- getByUnitIdQuery(unitId)
       params <- unitParameterDao.getByUnitIdQuery(unitId)
     } yield unit.map(_.copy(params = params)))
-
-  def getAllQuery: DBIO[Seq[ACSUnit]] =
-    sql"""select #$columns from #$tableName""".as[ACSUnit]
-
-  def getAll: Future[Seq[ACSUnit]] = db.run(getAllQuery)
 }

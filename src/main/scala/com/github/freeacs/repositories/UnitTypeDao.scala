@@ -53,7 +53,4 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
 
   def getByName(name: String): Future[Option[ACSUnitType]] =
     db.run(getByNameQuery(name))
-
-  def save(unitType: ACSUnitType): Future[ACSUnitType] =
-    ???
 }

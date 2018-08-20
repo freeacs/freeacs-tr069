@@ -15,7 +15,7 @@ class UnitParameterDao(val config: DatabaseConfig[JdbcProfile])(
 
   val unitTypeParameterDao = new UnitTypeParameterDao(config)
 
-  implicit val getProfileParameterResult = GetResult(
+  implicit val getUnitParameterResult = GetResult(
     r =>
       ACSUnitParameter(
         r.<<,
@@ -41,5 +41,14 @@ class UnitParameterDao(val config: DatabaseConfig[JdbcProfile])(
     db.run(getByUnitIdQuery(unitId))
 
   def getUnitSecret(unitId: String): Future[Option[String]] =
-    Future.successful(Some("easycwmp"))
+    db.run(
+      getByUnitIdQuery(unitId)
+        .filter(
+          _.exists(_.unitTypeParameter.name == SystemParameters.SECRET)
+        )
+        .map(_.headOption match {
+          case Some(p) => p.value
+          case _       => None
+        })
+    )
 }

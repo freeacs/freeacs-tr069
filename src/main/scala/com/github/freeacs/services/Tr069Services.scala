@@ -12,8 +12,6 @@ trait Tr069Services {
 
   def getUnitSecret(unitId: String): Future[Option[String]]
 
-  def getUnitParameters(unitId: String): Future[Seq[ACSUnitParameter]]
-
   def createUnitType(name: String): Future[ACSUnitType]
 
   def createProfile(name: String, unitTypeId: Long): Future[ACSProfile]
@@ -66,17 +64,8 @@ object Tr069Services {
       def getUnit(unitId: String): Future[Option[ACSUnit]] =
         unitRepository.getByUnitId(unitId)
 
-      def getUnitParameters(unitId: String): Future[Seq[ACSUnitParameter]] =
-        Future.successful(Seq.empty)
-
       def createUnitType(name: String): Future[ACSUnitType] =
-        unitTypeRepository.save(
-          ACSUnitType(
-            unitTypeName = name,
-            description = Some("Auto generated"),
-            protocol = "TR069"
-          )
-        )
+        ???
 
       def createProfile(name: String, unitTypeId: Long): Future[ACSProfile] =
         ???
