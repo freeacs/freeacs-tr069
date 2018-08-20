@@ -1,9 +1,9 @@
-package com.github.freeacs.session.methods
+package com.github.freeacs.methods
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import com.github.freeacs.config.SystemParameters._
-import com.github.freeacs.domain.{UnitParameter, UnitTypeParameter}
+import com.github.freeacs.domain.{ACSUnitParameter, ACSUnitTypeParameter}
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.SessionState._
 import com.github.freeacs.session.{ExpectEmptyRequest, SessionState}
@@ -58,7 +58,7 @@ object INMethod extends AbstractMethod[InformRequest] {
   }
 
   private[this] def toUnitParameterTuple(
-      p: UnitParameter
+      p: ACSUnitParameter
   ): UnitParameterType = {
     (
       p.unitTypeParameter.unitTypeParamId,
@@ -67,7 +67,7 @@ object INMethod extends AbstractMethod[InformRequest] {
     )
   }
   private[this] def toUnitTypeParameterTuple(
-      p: UnitTypeParameter
+      p: ACSUnitTypeParameter
   ): UnitTypeParameterType = {
     (
       p.unitTypeParamId,

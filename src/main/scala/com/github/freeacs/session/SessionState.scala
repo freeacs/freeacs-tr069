@@ -3,7 +3,7 @@ package com.github.freeacs.session
 import akka.cluster.ddata.ReplicatedData
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.SessionState._
-import com.github.freeacs.session.methods._
+import com.github.freeacs.methods._
 import com.github.freeacs.xml._
 
 import scala.concurrent.{ExecutionContext, Future}
