@@ -25,7 +25,7 @@ trait Tr069Services {
 
   def createProfile(name: String, unitTypeId: Long): Future[Profile]
 
-  def getUnitTypeByName(name: String): Future[Option[UnitType]]
+  def getUnitTypeByName(name: String): Future[Option[unitType.UnitType]]
 
   def createUnitTypeParameters(
       params: Seq[(String, String)],
@@ -150,30 +150,8 @@ object Tr069Services {
       def createProfile(name: String, unitTypeId: Long): Future[Profile] =
         ???
 
-      def getUnitTypeByName(name: String): Future[Option[UnitType]] =
-        unitTypeRepository.getByName(name).map {
-          case Some(dto) =>
-            Some(
-              UnitType(
-                dto._1.unitTypeName,
-                dto._1.protocol,
-                dto._1.unitTypeId,
-                dto._1.matcherId,
-                dto._1.vendorName,
-                dto._1.description,
-                params = dto._2.map(p => {
-                  UnitTypeParameter(
-                    p.name,
-                    p.flags,
-                    p.unitTypeId,
-                    p.unitTypeParameterId
-                  )
-                })
-              )
-            )
-          case _ =>
-            None
-        }
+      def getUnitTypeByName(name: String): Future[Option[unitType.UnitType]] =
+        unitTypeRepository.getByName(name)
 
       def createUnitTypeParameters(
           params: Seq[(String, String)],
