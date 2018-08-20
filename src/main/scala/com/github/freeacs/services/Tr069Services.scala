@@ -12,18 +12,7 @@ trait Tr069Services {
 
   def getUnitSecret(unitId: String): Future[Option[String]]
 
-  def createUnitType(name: String): Future[ACSUnitType]
-
-  def createProfile(name: String, unitTypeId: Long): Future[ACSProfile]
-
   def getUnitTypeByName(name: String): Future[Option[ACSUnitType]]
-
-  def createUnitTypeParameters(
-      params: Seq[(String, String)],
-      unitTypeId: Long
-  ): Future[Seq[ACSUnitTypeParameter]]
-
-  def createUnit(userId: String): Future[ACSUnit]
 
   def createOrUpdateUnitParameters(
       unitParams: Seq[(String, String, Long)]
@@ -64,31 +53,7 @@ object Tr069Services {
       def getUnit(unitId: String): Future[Option[ACSUnit]] =
         unitRepository.getByUnitId(unitId)
 
-      def createUnitType(name: String): Future[ACSUnitType] =
-        ???
-
-      def createProfile(name: String, unitTypeId: Long): Future[ACSProfile] =
-        ???
-
       def getUnitTypeByName(name: String): Future[Option[ACSUnitType]] =
         unitTypeRepository.getByName(name)
-
-      def createUnitTypeParameters(
-          params: Seq[(String, String)],
-          unitTypeId: Long
-      ): Future[Seq[ACSUnitTypeParameter]] =
-        Future.successful(Seq.empty)
-
-      def createUnit(userId: String): Future[ACSUnit] = ???
     }
-
-  private def toDomainUnit(
-      daoUnit: ACSUnit,
-      daoUnitType: ACSUnitType,
-      daoProfile: Any,
-      unitTypeParams: Seq[ACSUnitTypeParameter],
-      unitParams: Seq[ACSUnitParameter]
-  ): Some[ACSUnit] = {
-    ???
-  }
 }
