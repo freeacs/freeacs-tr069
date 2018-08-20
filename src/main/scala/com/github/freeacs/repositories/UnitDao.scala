@@ -1,5 +1,5 @@
 package com.github.freeacs.repositories
-import com.github.freeacs.domain.ACSUnit
+import com.github.freeacs.domain.{ACSUnit, ACSUnitTypeParameter}
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
 
@@ -9,9 +9,10 @@ class UnitDao(val config: DatabaseConfig[JdbcProfile])(
     implicit ec: ExecutionContext
 ) extends Dao {
 
-  val unitTypeDao      = new UnitTypeDao(config)
-  val profileDao       = new ProfileDao(config)
-  val unitParameterDao = new UnitParameterDao(config)
+  val unitTypeDao          = new UnitTypeDao(config)
+  val profileDao           = new ProfileDao(config)
+  val unitParameterDao     = new UnitParameterDao(config)
+  val unitTypeParameterDao = new UnitTypeParameterDao(config)
 
   import config.profile.api._
 
@@ -42,8 +43,29 @@ class UnitDao(val config: DatabaseConfig[JdbcProfile])(
        """.as[ACSUnit].headOption
 
   def getByUnitId(unitId: String): Future[Option[ACSUnit]] =
-    db.run(for {
-      unit   <- getByUnitIdQuery(unitId)
-      params <- unitParameterDao.getByUnitIdQuery(unitId)
-    } yield unit.map(_.copy(params = params)))
+    db.run(
+      for {
+        unit           <- getByUnitIdQuery(unitId)
+        unitParams     <- unitParameterDao.getByUnitIdQuery(unitId)
+        unitTypeParams <- getUnitTypeParams(unit)
+      } yield
+        unit.map(
+          u =>
+            u.copy(
+              params = unitParams,
+              unitType = u.unitType.copy(params = unitTypeParams)
+          )
+        )
+    )
+
+  private def getUnitTypeParams(
+      unit: Option[ACSUnit]
+  ): DBIO[Seq[ACSUnitTypeParameter]] =
+    unit match {
+      case Some(acsUnit) =>
+        unitTypeParameterDao.getByUnitTypeId(
+          acsUnit.unitType.unitTypeId.get
+        )
+      case _ => DBIO.successful(Seq.empty)
+    }
 }

@@ -24,6 +24,12 @@ class UnitTypeParameterDao(val config: DatabaseConfig[JdbcProfile])(
       prefix
     )
 
+  def getByUnitTypeId(unitTypeId: Long): DBIO[Seq[ACSUnitTypeParameter]] =
+    sql"""
+         select #${columns()} from #$tableName
+         where unit_type_id = $unitTypeId
+       """.as[ACSUnitTypeParameter]
+
   def getAllQuery: DBIO[Seq[ACSUnitTypeParameter]] =
     sql"""select #${columns()} from #$tableName""".as[ACSUnitTypeParameter]
 

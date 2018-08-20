@@ -51,4 +51,12 @@ class UnitParameterDao(val config: DatabaseConfig[JdbcProfile])(
           case _       => None
         })
     )
+  def createOrUpdate(param: ACSUnitParameter): DBIO[Int] =
+    sqlu"""insert into #$tableName(unit_id, unit_type_param_id, value)
+           values('#${param.unitId}', #${param.unitTypeParameter.unitTypeParamId.get}, '#${param.value
+      .getOrElse("")}')
+           ON DUPLICATE KEY UPDATE value='#${param.value.getOrElse("")}';"""
+
+  def createOrUpdateUnitParams(params: Seq[ACSUnitParameter]): Future[Int] =
+    db.run(DBIO.sequence(params.map(createOrUpdate)).transactionally).map(_.sum)
 }
