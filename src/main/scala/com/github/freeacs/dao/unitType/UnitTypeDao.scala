@@ -9,8 +9,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
     implicit ec: ExecutionContext
-) extends Dao
-    with UnitTypeTable {
+) extends Dao {
 
   import config.profile.api._
 

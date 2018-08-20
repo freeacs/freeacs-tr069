@@ -3,11 +3,7 @@ package com.github.freeacs.services
 import com.github.freeacs.dao.profile.{ProfileDao, ProfileParameterDao}
 import com.github.freeacs.dao.unit.{UnitDao, UnitParameterDao}
 import com.github.freeacs.dao.{unit, unitType}
-import com.github.freeacs.dao.unitType.{
-  UnitTypeDao,
-  UnitTypeParameterDao,
-  UnitType => UnitTypeDTO
-}
+import com.github.freeacs.dao.unitType.{UnitTypeDao, UnitTypeParameterDao}
 import com.github.freeacs.domain._
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -25,7 +21,7 @@ trait Tr069Services {
 
   def createProfile(name: String, unitTypeId: Long): Future[Profile]
 
-  def getUnitTypeByName(name: String): Future[Option[unitType.UnitType]]
+  def getUnitTypeByName(name: String): Future[Option[UnitType]]
 
   def createUnitTypeParameters(
       params: Seq[(String, String)],
@@ -90,22 +86,7 @@ object Tr069Services {
         unitParameterRepository.getUnitSecret(unitId)
 
       def getUnit(unitId: String): Future[Option[Unit]] =
-        unitRepository.get(unitId).flatMap {
-          case Some((unit, unitType)) =>
-            for {
-              unitTypeParams <- getUnitTypeParameters(unit.unitTypeId)
-              unitParams     <- getUnitParameters(unitId)
-            } yield
-              toDomainUnit(
-                unit,
-                unitType,
-                null,
-                unitTypeParams,
-                unitParams
-              )
-          case _ =>
-            Future.successful(None)
-        }
+        unitRepository.get(unitId)
 
       def getUnitParameters(unitId: String): Future[Seq[UnitParameter]] =
         unitParameterRepository
@@ -127,30 +108,18 @@ object Tr069Services {
           })
 
       def createUnitType(name: String): Future[UnitType] =
-        unitTypeRepository
-          .save(
-            UnitTypeDTO(
-              unitTypeName = name,
-              description = Some("Auto generated"),
-              protocol = "TR069"
-            )
+        unitTypeRepository.save(
+          UnitType(
+            unitTypeName = name,
+            description = Some("Auto generated"),
+            protocol = "TR069"
           )
-          .map(
-            dto =>
-              UnitType(
-                dto.unitTypeName,
-                dto.protocol,
-                dto.unitTypeId,
-                dto.matcherId,
-                dto.vendorName,
-                dto.description
-            )
-          )
+        )
 
       def createProfile(name: String, unitTypeId: Long): Future[Profile] =
         ???
 
-      def getUnitTypeByName(name: String): Future[Option[unitType.UnitType]] =
+      def getUnitTypeByName(name: String): Future[Option[UnitType]] =
         unitTypeRepository.getByName(name)
 
       def createUnitTypeParameters(
@@ -177,8 +146,8 @@ object Tr069Services {
     }
 
   private def toDomainUnit(
-      daoUnit: unit.Unit,
-      daoUnitType: UnitTypeDTO,
+      daoUnit: Unit,
+      daoUnitType: UnitType,
       daoProfile: Any,
       unitTypeParams: Seq[UnitTypeParameter],
       unitParams: Seq[UnitParameter]

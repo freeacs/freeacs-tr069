@@ -2,7 +2,7 @@ package com.github.freeacs.dao.unitType
 
 import com.github.freeacs.dao.Dao
 
-trait UnitTypeParameterTable extends UnitTypeTable { this: Dao =>
+trait UnitTypeParameterTable { this: Dao =>
   import config.profile.api._
 
   class UnitTypeParameters(tag: Tag)

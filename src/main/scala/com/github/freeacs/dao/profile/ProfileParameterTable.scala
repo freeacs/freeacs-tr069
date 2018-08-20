@@ -1,7 +1,7 @@
 package com.github.freeacs.dao.profile
 
 import com.github.freeacs.dao.Dao
-import com.github.freeacs.dao.unitType.{UnitTypeParameterTable, UnitTypeTable}
+import com.github.freeacs.dao.unitType.UnitTypeParameterTable
 
 trait ProfileParameterTable extends UnitTypeParameterTable {
   this: Dao =>
