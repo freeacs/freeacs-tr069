@@ -1,5 +1,5 @@
 package com.github.freeacs.repositories
-import com.github.freeacs.domain.{ACSUnit, ACSUnitTypeParameter}
+import com.github.freeacs.domain.{ACSUnit, ACSUnitType, ACSUnitTypeParameter}
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
 
@@ -62,10 +62,10 @@ class UnitDao(val config: DatabaseConfig[JdbcProfile])(
       unit: Option[ACSUnit]
   ): DBIO[Seq[ACSUnitTypeParameter]] =
     unit match {
-      case Some(acsUnit) =>
-        unitTypeParameterDao.getByUnitTypeId(
-          acsUnit.unitType.unitTypeId.get
-        )
+      case Some(
+          ACSUnit(_, ACSUnitType(_, _, Some(unitTypeId), _, _, _, _), _, _)
+          ) =>
+        unitTypeParameterDao.getByUnitTypeId(unitTypeId)
       case _ => DBIO.successful(Seq.empty)
     }
 }
