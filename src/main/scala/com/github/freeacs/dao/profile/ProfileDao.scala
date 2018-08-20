@@ -18,22 +18,27 @@ class ProfileDao(val config: DatabaseConfig[JdbcProfile])(
 
   val tableName = "profile"
 
-  val columns = "profile_name, unit_type_id, profile_id"
+  def columns(prefix: String) =
+    Seq("profile_name", "unit_type_id", "profile_id")
+      .map(
+        col => s"$prefix.$col as ${prefix}_$col"
+      )
+      .mkString(", ")
 
   def getAllQuery: DBIO[Seq[Profile]] =
-    sql"""select #$columns from #$tableName""".as[Profile]
+    sql"""select #${columns("")} from #$tableName""".as[Profile]
 
   def getAll: Future[Seq[Profile]] = db.run(getAllQuery)
 
   def getByIdQuery(profileId: Long) =
-    sql"""select #$columns from #$tableName
+    sql"""select #${columns("")} from #$tableName
           where profile_id = $profileId""".as[Profile].headOption
 
   def getById(profileId: Long): Future[Option[Profile]] =
     db.run(getByIdQuery(profileId))
 
   def getByNameQuery(profileName: String) =
-    sql"""select #$columns from #$tableName
+    sql"""select #${columns("")} from #$tableName
           where profile_name= '$profileName'
        """.as[Profile].headOption
 

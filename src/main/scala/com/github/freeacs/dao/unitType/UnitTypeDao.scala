@@ -19,16 +19,23 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
 
   val tableName = "unit_type"
 
-  val columns =
-    "unit_type_name, protocol, unit_type_id, description, matcher_id, vendor_name"
+  def columns(prefix: String) =
+    Seq(
+      "unit_type_name",
+      "protocol",
+      "unit_type_id",
+      "description",
+      "matcher_id",
+      "vendor_name"
+    ).map(col => s"$prefix.$col as ${prefix}_$col").mkString(", ")
 
   def getAllQuery: DBIO[Seq[UnitType]] =
-    sql"""select #$columns from #$tableName""".as[UnitType]
+    sql"""select #${columns("")} from #$tableName""".as[UnitType]
 
   def getAll: Future[Seq[UnitType]] = db.run(getAllQuery)
 
   def getByIdQuery(id: Long): DBIO[Option[UnitType]] =
-    sql"""select #$columns from #$tableName
+    sql"""select #${columns("")} from #$tableName
           where unit_type_id = id
        """.as[UnitType].headOption
 
@@ -36,7 +43,7 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
     db.run(getByIdQuery(id))
 
   def getByNameQuery(name: String): DBIO[Option[UnitType]] =
-    sql"""select #$columns from #$tableName
+    sql"""select #${columns("")} from #$tableName
           where unit_type_name = '$name'
        """.as[UnitType].headOption
 

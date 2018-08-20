@@ -86,7 +86,7 @@ object Tr069Services {
         unitParameterRepository.getUnitSecret(unitId)
 
       def getUnit(unitId: String): Future[Option[Unit]] =
-        unitRepository.get(unitId)
+        unitRepository.getByUnitId(unitId)
 
       def getUnitParameters(unitId: String): Future[Seq[UnitParameter]] =
         unitParameterRepository
