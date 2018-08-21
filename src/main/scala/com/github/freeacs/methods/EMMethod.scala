@@ -5,10 +5,7 @@ import java.time.format.DateTimeFormatter
 import com.github.freeacs.config.SystemParameters._
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.SessionState.UnitTypeParameterType
-import com.github.freeacs.session.{
-  ExpectGetParameterNamesResponse,
-  SessionState
-}
+import com.github.freeacs.session._
 import com.github.freeacs.xml.{
   EmptyRequest,
   GetParameterNamesRequest,
@@ -31,10 +28,10 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
       Future.successful(resetConversation(sessionState))
     } else {
       val previousMethod = sessionState.history.last._1
-      if (previousMethod == "EM") {
+      if (previousMethod == EM) {
         log.info("EM-Decision is EM since two last responses from CPE was EM")
         Future.successful(resetConversation(sessionState))
-      } else if (Seq("INReq", "TCReq", "GRMRes").contains(previousMethod)) {
+      } else if (Seq(INReq).contains(previousMethod)) {
         if (sessionState.unitTypeId.isEmpty) {
           log.info("EM-Decision is EM since unit is not found")
           Future.successful(resetConversation(sessionState))
@@ -46,7 +43,7 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
             (
               sessionState.copy(
                 state = ExpectGetParameterNamesResponse,
-                history = (sessionState.history :+ ("EM", "GPNReq"))
+                history = (sessionState.history :+ (EM, GPNReq))
               ),
               response
             )

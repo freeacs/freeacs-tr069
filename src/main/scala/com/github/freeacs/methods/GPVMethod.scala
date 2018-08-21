@@ -2,6 +2,8 @@ package com.github.freeacs.methods
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.{
   ExpectSetParameterValuesResponse,
+  GPVRes,
+  SPVReq,
   SessionState
 }
 import com.github.freeacs.xml.{
@@ -24,7 +26,7 @@ object GPVMethod extends AbstractMethod[GetParameterValuesResponse] {
       (
         sessionState.copy(
           state = ExpectSetParameterValuesResponse,
-          history = (sessionState.history :+ ("GPVRes", "SPVReq"))
+          history = (sessionState.history :+ (GPVRes, SPVReq))
         ),
         response
       )

@@ -1,12 +1,13 @@
 package com.github.freeacs.methods
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-
-import com.github.freeacs.config.SystemParameters._
 import com.github.freeacs.domain.{ACSUnitParameter, ACSUnitTypeParameter}
 import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.SessionState._
-import com.github.freeacs.session.{ExpectEmptyRequest, SessionState}
+import com.github.freeacs.session.{
+  ExpectEmptyRequest,
+  INReq,
+  INRes,
+  SessionState
+}
 import com.github.freeacs.xml.{
   InformRequest,
   InformResponse,
@@ -44,7 +45,7 @@ object INMethod extends AbstractMethod[InformRequest] {
         (
           state.copy(
             state = ExpectEmptyRequest,
-            history = (state.history :+ ("INReq", "INRes"))
+            history = (state.history :+ (INReq, INRes))
           ),
           InformResponse()
         )
