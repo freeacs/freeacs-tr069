@@ -12,7 +12,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.github.freeacs.config.Configuration
-import com.github.freeacs.services.{AuthService, Tr069Services}
+import com.github.freeacs.repositories.DaoService
 import com.github.freeacs.session.SessionService
 import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
@@ -26,7 +26,7 @@ import scala.xml.NodeSeq
 
 class Routes(
     breaker: CircuitBreaker,
-    services: Tr069Services,
+    services: DaoService,
     authService: AuthService,
     config: Configuration,
     conversation: SessionService

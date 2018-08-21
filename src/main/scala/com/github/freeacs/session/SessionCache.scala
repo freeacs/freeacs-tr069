@@ -53,7 +53,7 @@ class SessionCache extends Actor with ActorLogging {
       refreshSessionExpiration(key)
       g.dataValue match {
         case data: LWWMap[_, _] =>
-          data.asInstanceOf[LWWMap[String, SessionState]].get(key) match {
+          data.asInstanceOf[LWWMap[String, Any]].get(key) match {
             case Some(value) => replyTo ! Cached(key, Some(value))
             case None        => replyTo ! Cached(key, None)
           }
@@ -65,7 +65,7 @@ class SessionCache extends Actor with ActorLogging {
     case _: UpdateResponse[_] => // ok
   }
 
-  private def dataKey(key: String): LWWMapKey[String, SessionState] =
+  private def dataKey(key: String): LWWMapKey[String, Any] =
     LWWMapKey(key)
 
   private def refreshSessionExpiration(key: String) = {
@@ -89,11 +89,11 @@ class SessionCache extends Actor with ActorLogging {
 object SessionCache {
   def props: Props = Props[SessionCache]
 
-  final case class PutInCache(key: String, value: SessionState)
+  final case class PutInCache(key: String, value: Any)
 
   final case class GetFromCache(key: String)
 
-  final case class Cached(key: String, value: Option[SessionState])
+  final case class Cached(key: String, value: Option[Any])
 
   final case class Evict(key: String)
 

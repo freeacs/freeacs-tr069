@@ -1,9 +1,9 @@
 package com.github.freeacs.session
 
 import akka.cluster.ddata.ReplicatedData
-import com.github.freeacs.services.Tr069Services
 import com.github.freeacs.session.SessionState._
 import com.github.freeacs.methods._
+import com.github.freeacs.repositories.DaoService
 import com.github.freeacs.xml._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -34,7 +34,7 @@ final case class SessionState(
   def merge(that: SessionState): SessionState =
     if (that.modified > this.modified) that else this
 
-  def transition(services: Tr069Services, request: SOAPRequest)(
+  def transition(services: DaoService, request: SOAPRequest)(
       implicit ec: ExecutionContext
   ): Future[(SessionState, SOAPResponse)] = request match {
     case request: InformRequest if state == ExpectInformRequest =>

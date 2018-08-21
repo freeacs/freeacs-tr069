@@ -1,5 +1,5 @@
 package com.github.freeacs.methods
-import com.github.freeacs.services.Tr069Services
+import com.github.freeacs.repositories.DaoService
 import com.github.freeacs.session.{
   ExpectGetParameterValuesResponse,
   GPNRes,
@@ -18,7 +18,7 @@ object GPNMethod extends AbstractMethod[GetParameterNamesResponse] {
   def process(
       request: GetParameterNamesResponse,
       sessionState: SessionState,
-      services: Tr069Services
+      services: DaoService
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
     log.info("Got GPNRes. Returning GPVReq. " + request.toString)
     val response =

@@ -3,7 +3,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import com.github.freeacs.config.SystemParameters._
-import com.github.freeacs.services.Tr069Services
+import com.github.freeacs.repositories.DaoService
 import com.github.freeacs.session.SessionState.UnitTypeParameterType
 import com.github.freeacs.session._
 import com.github.freeacs.xml.{
@@ -19,7 +19,7 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
   def process(
       request: EmptyRequest,
       sessionState: SessionState,
-      services: Tr069Services
+      services: DaoService
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
     if (sessionState.history.isEmpty) {
       log.error(
@@ -59,7 +59,7 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
   }
 
   private[this] def writeSystemParameters(
-      services: Tr069Services,
+      services: DaoService,
       state: SessionState
   ): Future[Int] = {
     services.createOrUpdateUnitParameters {

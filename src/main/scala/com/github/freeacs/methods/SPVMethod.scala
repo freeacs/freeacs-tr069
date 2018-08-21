@@ -1,5 +1,5 @@
 package com.github.freeacs.methods
-import com.github.freeacs.services.Tr069Services
+import com.github.freeacs.repositories.DaoService
 import com.github.freeacs.session.{EM, SPVRes, SessionState}
 import com.github.freeacs.xml.{SOAPResponse, SetParameterValuesResponse}
 
@@ -9,7 +9,7 @@ object SPVMethod extends AbstractMethod[SetParameterValuesResponse] {
   def process(
       request: SetParameterValuesResponse,
       sessionState: SessionState,
-      services: Tr069Services
+      services: DaoService
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
     log.info("Got SPVRes. Returning EM. " + request.toString)
     val history = sessionState.history :+ (SPVRes, EM)

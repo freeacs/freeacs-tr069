@@ -6,7 +6,7 @@ import akka.pattern.CircuitBreaker
 import akka.stream.ActorMaterializer
 import com.github.freeacs.session.{SessionCache, SessionService}
 import com.github.freeacs.config.Configuration
-import com.github.freeacs.services.{AuthService, Tr069Services}
+import com.github.freeacs.repositories.DaoService
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.ExecutionContextExecutor
@@ -29,8 +29,8 @@ trait Server {
     resetTimeout
   )
 
-  val services     = Tr069Services.from(dbConfig)
-  val authService  = AuthService.from(services)
+  val services     = new DaoService(dbConfig)
+  val authService  = new AuthService(services)
   val cacheActor   = system.actorOf(SessionCache.props)
   val conversation = new SessionService(services, config, cacheActor)
 

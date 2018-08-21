@@ -1,6 +1,6 @@
 package com.github.freeacs.methods
 import com.github.freeacs.domain.{ACSUnitParameter, ACSUnitTypeParameter}
-import com.github.freeacs.services.Tr069Services
+import com.github.freeacs.repositories.DaoService
 import com.github.freeacs.session.SessionState._
 import com.github.freeacs.session.{
   ExpectEmptyRequest,
@@ -21,7 +21,7 @@ object INMethod extends AbstractMethod[InformRequest] {
   def process(
       request: InformRequest,
       sessionState: SessionState,
-      services: Tr069Services
+      services: DaoService
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
     val cpeParams = InformParams(request.params)
     services
