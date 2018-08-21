@@ -39,12 +39,6 @@ object INMethod extends AbstractMethod[InformRequest] {
             .getOrElse(List.empty)
         )
       }
-      .flatMap { state =>
-        savePeriodicInform(services, cpeParams, state).map { result =>
-          log.info(s"Updated or created $result unit parameters")
-          state
-        }
-      }
       .map(state => {
         log.info("Got INReq. Returning INRes. " + request.toString)
         (
@@ -75,96 +69,6 @@ object INMethod extends AbstractMethod[InformRequest] {
       p.flags,
       p.unitTypeId
     )
-  }
-
-  private[this] def savePeriodicInform(
-      services: Tr069Services,
-      cpeParams: InformParams,
-      state: SessionState
-  ): Future[Int] = {
-    services.createOrUpdateUnitParameters {
-      val currentTimestamp = LocalDateTime
-        .now()
-        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-      List(
-        mkParameter(
-          state.user,
-          state.unitTypeParams,
-          LAST_CONNECT_TMS,
-          currentTimestamp
-        ),
-        state.unitParams
-          .find(_._2 == FIRST_CONNECT_TMS)
-          .map(_ => List.empty)
-          .getOrElse(
-            mkParameter(
-              state.user,
-              state.unitTypeParams,
-              FIRST_CONNECT_TMS,
-              currentTimestamp
-            )
-          ),
-        mkParameter(
-          state.user,
-          state.unitTypeParams,
-          SERIAL_NUMBER,
-          state.serialNumber.getOrElse("")
-        ),
-        mkParameter(
-          state.user,
-          state.unitTypeParams,
-          SOFTWARE_VERSION,
-          cpeParams.perInfInt.map(_.value).getOrElse("")
-        ),
-        mkParameter(
-          state.user,
-          state.unitTypeParams,
-          IP_ADDRESS,
-          state.remoteAddress
-        ),
-        mkParameter(
-          state.user,
-          state.unitTypeParams,
-          PERIODIC_INTERVAL,
-          cpeParams.perInfInt.map(_.value).getOrElse("")
-        ),
-        mkParameter(state.user, state.unitTypeParams, cpeParams.swVersion),
-        mkParameter(state.user, state.unitTypeParams, cpeParams.perInfInt),
-        mkParameter(state.user, state.unitTypeParams, cpeParams.connReqUrl),
-        mkParameter(state.user, state.unitTypeParams, cpeParams.connReqUser),
-        mkParameter(state.user, state.unitTypeParams, cpeParams.connReqPass)
-      ).flatten
-    }
-  }
-
-  private[this] def mkParameter(
-      user: String,
-      unitTypeParams: List[UnitTypeParameterType],
-      param: String,
-      value: String
-  ): List[(String, String, Long)] = {
-    unitTypeParams
-      .find(p => p._2 == param)
-      .map {
-        case (Some(utpId), _, _, _) =>
-          List((user, value, utpId))
-        case _ => List.empty
-      }
-      .getOrElse(List.empty)
-  }
-
-  private[this] def mkParameter(
-      user: String,
-      unitTypeParams: List[UnitTypeParameterType],
-      param: Option[ParameterValueStruct]
-  ): List[(String, String, Long)] = {
-    param.flatMap { param =>
-      unitTypeParams.find(p => p._2 == param.name).map {
-        case (Some(utpId), _, _, _) =>
-          List((user, param.value, utpId))
-        case _ => List.empty
-      }
-    }.getOrElse(List.empty)
   }
 
   private[this] case class InformParams(params: Seq[ParameterValueStruct]) {
