@@ -29,8 +29,8 @@ trait Server {
     resetTimeout
   )
 
-  val services     = new DaoService(dbConfig)
   val cacheActor   = system.actorOf(SessionCache.props)
+  val services     = new DaoService(dbConfig, cacheActor)
   val conversation = new SessionService(services, config, cacheActor)
 
   val routes = new Routes(breaker, services, config, conversation)

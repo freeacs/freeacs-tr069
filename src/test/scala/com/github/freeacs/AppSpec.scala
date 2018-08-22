@@ -48,7 +48,7 @@ class AppSpec extends WordSpec with Matchers with ScalatestRouteTest {
   }
   val routes = new Routes(
     breaker,
-    new DaoService(configuration.dbConfig) {
+    new DaoService(configuration.dbConfig, null) {
       override def getUnitSecret(
           unitId: String
       ): Future[Option[
