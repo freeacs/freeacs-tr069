@@ -1,6 +1,6 @@
 package com.github.freeacs.repositories
 
-import com.github.freeacs.domain.{ACSProfile, ACSProfileParameter}
+import com.github.freeacs.domain.ACSProfileParameter
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
 
@@ -13,7 +13,7 @@ class ProfileParameterDao(val config: DatabaseConfig[JdbcProfile])(
   import config.profile.api._
 
   implicit val getProfileParameterResult = GetResult(
-    r => ACSProfileParameter(r.<<, r.<<, r.<<?)
+    r => ACSProfileParameter.fromResultSet(r.<<, r.<<, r.<<?)
   )
 
   val tableName = "profile_param"

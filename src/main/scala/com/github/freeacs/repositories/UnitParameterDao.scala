@@ -1,7 +1,12 @@
 package com.github.freeacs.repositories
 
 import com.github.freeacs.config.SystemParameters
+import com.github.freeacs.domain.ACSUnit.UnitId
 import com.github.freeacs.domain.ACSUnitParameter
+import com.github.freeacs.domain.ACSUnitParameter.{
+  ACSUnitParameterTupleType,
+  UnitParameterValue
+}
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
 
@@ -13,27 +18,34 @@ class UnitParameterDao(val config: DatabaseConfig[JdbcProfile])(
 
   import config.profile.api._
 
-  val unitTypeParameterDao = new UnitTypeParameterDao(config)
+  val utpDao = new UnitTypeParameterDao(config)
+
+  implicit val getUnitId = GetResult(
+    r => UnitId(r.<<)
+  )
+
+  implicit val unitParamValueResult = GetResult(
+    r => r.<<?[String].map(UnitParameterValue.apply)
+  )
 
   implicit val getUnitParameterResult = GetResult(
     r =>
       ACSUnitParameter(
         r.<<,
-        unitTypeParameterDao.getUnitTypeParamResult(r),
+        utpDao.getUnitTypeParamResult(r),
         r.<<?
     )
   )
 
-  val tableName              = "unit_param"
-  val unitTypeParamTableName = unitTypeParameterDao.tableName
-  val unitTypeParamColumns =
-    unitTypeParameterDao.columns(Some(unitTypeParamTableName))
-  val columns = s"$tableName.unit_id, $unitTypeParamColumns, $tableName.value"
+  val tableName    = "unit_param"
+  val utpTableName = utpDao.tableName
+  val utpColumns   = utpDao.columns(Some(utpTableName))
+  val columns      = s"$tableName.unit_id, $utpColumns, $tableName.value"
 
   def getByUnitIdQuery(unitId: String): DBIO[Seq[ACSUnitParameter]] =
     sql"""select #$columns
-          from   #$tableName as #$tableName, #$unitTypeParamTableName as #$unitTypeParamTableName
-          where  #$tableName.unit_type_param_id = #$unitTypeParamTableName.unit_type_param_id and 
+          from   #$tableName as #$tableName, #$utpTableName as #$utpTableName
+          where  #$tableName.unit_type_param_id = #$utpTableName.unit_type_param_id and 
                  #$tableName.unit_id = '#$unitId';
       """.as[ACSUnitParameter]
 
@@ -51,12 +63,17 @@ class UnitParameterDao(val config: DatabaseConfig[JdbcProfile])(
           case _       => None
         })
     )
-  def createOrUpdate(param: ACSUnitParameter): DBIO[Int] =
+  def createOrUpdate(tuple: ACSUnitParameterTupleType): DBIO[Int] = {
+    val unitId          = tuple._1
+    val unitTypeParamId = tuple._2
+    val unitParamValue  = tuple._3.getOrElse("")
     sqlu"""insert into #$tableName(unit_id, unit_type_param_id, value)
-           values('#${param.unitId}', #${param.unitTypeParameter.unitTypeParamId.get}, '#${param.value
-      .getOrElse("")}')
-           ON DUPLICATE KEY UPDATE value='#${param.value.getOrElse("")}';"""
+           values('#$unitId', #$unitTypeParamId, '#$unitParamValue')
+           ON DUPLICATE KEY UPDATE value='#$unitParamValue';"""
+  }
 
-  def createOrUpdateUnitParams(params: Seq[ACSUnitParameter]): Future[Int] =
+  def createOrUpdateUnitParams(
+      params: Seq[ACSUnitParameterTupleType]
+  ): Future[Int] =
     db.run(DBIO.sequence(params.map(createOrUpdate)).transactionally).map(_.sum)
 }

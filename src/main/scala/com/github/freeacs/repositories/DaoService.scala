@@ -2,8 +2,8 @@ package com.github.freeacs.repositories
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorRef
 import akka.util.Timeout
+import com.github.freeacs.domain.ACSUnitParameter.ACSUnitParameterTupleType
 import com.github.freeacs.domain._
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
@@ -20,18 +20,9 @@ class DaoService(dbConfig: DatabaseConfig[JdbcProfile])(
   val unitParameterRepository = new UnitParameterDao(dbConfig)
 
   def createOrUpdateUnitParameters(
-      unitParams: Seq[(String, String, Long)]
+      unitParams: Seq[ACSUnitParameterTupleType]
   ): Future[Int] =
-    unitParameterRepository.createOrUpdateUnitParams(
-      unitParams.map(
-        up =>
-          ACSUnitParameter(
-            up._1,
-            ACSUnitTypeParameter("", "", -1, Option(up._3)),
-            Option(up._2)
-        )
-      )
-    )
+    unitParameterRepository.createOrUpdateUnitParams(unitParams)
 
   def getUnitSecret(unitId: String): Future[Option[String]] =
     unitParameterRepository.getUnitSecret(unitId)

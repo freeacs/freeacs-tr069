@@ -1,24 +1,45 @@
 package com.github.freeacs.domain
 
+import com.github.freeacs.domain.ACSProfile.ProfileId.ProfileId
+import com.github.freeacs.domain.ACSProfile.ProfileName.ProfileName
+import com.github.freeacs.domain.ACSUnitType.UnitTypeId
+import com.github.freeacs.domain.ACSUnitType.UnitTypeId.UnitTypeId
+import shapeless.tag.@@
+
 case class ACSProfile(
-    profileName: String,
-    unitTypeId: Long,
-    profileId: Option[Long],
+    profileName: ProfileName,
+    unitTypeId: UnitTypeId,
+    profileId: Option[ProfileId],
 )
 
 object ACSProfile {
-  type ACSProfileTupleType = (String, Long, Option[Long])
 
-  def toTuple(profile: ACSProfile): ACSProfileTupleType =
-    (profile.profileName, profile.unitTypeId, profile.profileId)
+  type ACSProfileTupleType = (ProfileName, UnitTypeId, Option[ProfileId])
 
-  def fromTuple(tuple: ACSProfileTupleType): ACSProfile =
-    ACSProfile(tuple._1, tuple._2, tuple._3)
-
-  def fromId(id: Long, unitTypeId: Long): ACSProfile =
+  def fromResultSet(
+      profileName: String,
+      unitTypeId: Long,
+      profileId: Option[Long]
+  ): ACSProfile =
     ACSProfile(
-      profileName = "",
-      unitTypeId = unitTypeId,
-      profileId = Some(id)
+      ProfileName(profileName),
+      UnitTypeId(unitTypeId),
+      profileId.map(ProfileId.apply)
     )
+
+  object ProfileId {
+    trait Tag
+    type ProfileId = Long @@ Tag
+
+    def apply(v: Long): ProfileId =
+      shapeless.tag[Tag][Long](v)
+  }
+
+  object ProfileName {
+    trait Tag
+    type ProfileName = String @@ Tag
+
+    def apply(v: String): ProfileName =
+      shapeless.tag[Tag][String](v)
+  }
 }

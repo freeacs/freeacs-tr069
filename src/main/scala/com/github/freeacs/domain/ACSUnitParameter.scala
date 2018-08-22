@@ -1,26 +1,31 @@
 package com.github.freeacs.domain
+import com.github.freeacs.domain.ACSUnit.UnitId.UnitId
+import com.github.freeacs.domain.ACSUnitParameter.UnitParameterValue.UnitParameterValue
+import shapeless.tag.@@
 
 case class ACSUnitParameter(
-    unitId: String,
+    unitId: UnitId,
     unitTypeParameter: ACSUnitTypeParameter,
-    value: Option[String]
+    value: Option[UnitParameterValue]
 )
 
 object ACSUnitParameter {
-  type ACSUnitParameterTupleType = (String, Long, Long, Option[String])
+
+  type ACSUnitParameterTupleType =
+    (String, Long, Option[String])
 
   def toTuple(parameter: ACSUnitParameter): ACSUnitParameterTupleType =
     (
-      parameter.unitId,
-      parameter.unitTypeParameter.unitTypeId,
-      parameter.unitTypeParameter.unitTypeParamId.get,
-      parameter.value
+      parameter.unitId.toString,
+      parameter.unitTypeParameter.unitTypeParamId.get.toLong,
+      parameter.value.map(_.toString)
     )
 
-  def fromTuple(tuple: ACSUnitParameterTupleType): ACSUnitParameter =
-    ACSUnitParameter(
-      tuple._1,
-      ACSUnitTypeParameter.fromId(tuple._3, tuple._2),
-      tuple._4
-    )
+  object UnitParameterValue {
+    trait Tag
+    type UnitParameterValue = String @@ Tag
+
+    def apply(v: String): UnitParameterValue =
+      shapeless.tag[Tag][String](v)
+  }
 }

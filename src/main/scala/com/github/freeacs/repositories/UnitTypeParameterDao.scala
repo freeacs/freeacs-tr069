@@ -13,7 +13,7 @@ class UnitTypeParameterDao(val config: DatabaseConfig[JdbcProfile])(
   import config.profile.api._
 
   implicit val getUnitTypeParamResult = GetResult(
-    r => ACSUnitTypeParameter(r.<<, r.<<, r.<<, r.<<?)
+    r => ACSUnitTypeParameter.fromResultSet(r.<<, r.<<, r.<<, r.<<?)
   )
 
   val tableName = "unit_type_param"

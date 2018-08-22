@@ -3,13 +3,13 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import com.github.freeacs.config.SystemParameters._
+import com.github.freeacs.domain.ACSUnitParameter.ACSUnitParameterTupleType
 import com.github.freeacs.domain.ACSUnitTypeParameter.ACSUnitTypeParameterTupleType
 import com.github.freeacs.repositories.DaoService
 import com.github.freeacs.session._
 import com.github.freeacs.xml.{
   EmptyRequest,
   GetParameterNamesRequest,
-  ParameterValueStruct,
   SOAPResponse
 }
 
@@ -75,7 +75,7 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
         ),
         state.unitTypeParams
           .find(_._2 == FIRST_CONNECT_TMS)
-          .flatMap(p => state.unitParams.find(up => p._4.contains(up._3)))
+          .flatMap(p => state.unitParams.find(up => p._4.contains(up._2)))
           .map(_ => List.empty)
           .getOrElse(
             mkParameter(
@@ -112,12 +112,18 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
       unitTypeParams: List[ACSUnitTypeParameterTupleType],
       param: String,
       value: String
-  ): List[(String, String, Long)] = {
+  ): List[ACSUnitParameterTupleType] = {
     unitTypeParams
-      .find(p => p._2 == param)
+      .find(p => p._1 == param)
       .map {
         case (_, _, _, Some(utpId)) =>
-          List((user, value, utpId))
+          List(
+            (
+              user,
+              utpId,
+              Some(value)
+            )
+          )
         case _ => List.empty
       }
       .getOrElse(List.empty)

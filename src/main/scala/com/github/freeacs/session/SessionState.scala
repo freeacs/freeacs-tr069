@@ -3,9 +3,9 @@ package com.github.freeacs.session
 import akka.cluster.ddata.ReplicatedData
 import com.github.freeacs.domain.ACSUnitParameter.ACSUnitParameterTupleType
 import com.github.freeacs.domain.ACSUnitTypeParameter.ACSUnitTypeParameterTupleType
-import com.github.freeacs.session.SessionState._
 import com.github.freeacs.methods._
 import com.github.freeacs.repositories.DaoService
+import com.github.freeacs.session.SessionState._
 import com.github.freeacs.xml._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -58,7 +58,7 @@ final case class SessionState(
     case _ =>
       val newState =
         if (errorCount < 2)
-          copy(errorCount = (errorCount + 1))
+          copy(errorCount = errorCount + 1)
         else
           copy(
             errorCount = 0,

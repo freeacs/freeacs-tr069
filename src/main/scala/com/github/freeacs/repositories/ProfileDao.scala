@@ -12,7 +12,9 @@ class ProfileDao(val config: DatabaseConfig[JdbcProfile])(
 
   import config.profile.api._
 
-  implicit val getProfileResult = GetResult(r => ACSProfile(r.<<, r.<<, r.<<))
+  implicit val getProfileResult = GetResult(
+    r => ACSProfile.fromResultSet(r.<<, r.<<, r.<<)
+  )
 
   val tableName = "profile"
 

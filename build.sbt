@@ -18,6 +18,8 @@ scalaxbAutoPackages in (Compile, scalaxb) := true
 scalaxbDispatchVersion in (Compile, scalaxb) := "0.13.4"
 
 resolvers += "jitpack" at "https://jitpack.io"
+resolvers += Resolver.bintrayRepo("julien-lafont", "maven")
+resolvers += Resolver.bintrayRepo("beyondthelines", "maven")
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaV,
@@ -36,12 +38,9 @@ libraryDependencies ++= Seq(
   "com.h2database" % "h2" % "1.4.197",
   "commons-codec" % "commons-codec" % "1.11",
   "com.github.jarlah" % "AuthenticScala" % "-SNAPSHOT",
-  "org.scalatest" %% "scalatest" % "3.0.5" % "test"
+  "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+  "com.chuusai" %% "shapeless" % "2.3.3",
+  "beyondthelines" %% "pbdirect" % "0.1.0"
 )
 
 
-resolvers += Resolver.bintrayRepo("julien-lafont", "maven") 
-
-resolvers += Resolver.bintrayRepo("beyondthelines", "maven")
-
-libraryDependencies += "beyondthelines" %% "pbdirect" % "0.1.0"

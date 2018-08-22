@@ -1,7 +1,6 @@
 package com.github.freeacs.methods
 import com.github.freeacs.domain.{ACSUnitParameter, ACSUnitTypeParameter}
 import com.github.freeacs.repositories.DaoService
-import com.github.freeacs.session.SessionState._
 import com.github.freeacs.session.{
   ExpectEmptyRequest,
   INReq,
@@ -45,7 +44,7 @@ object INMethod extends AbstractMethod[InformRequest] {
         (
           state.copy(
             state = ExpectEmptyRequest,
-            history = (state.history :+ (INReq, INRes))
+            history = state.history :+ (INReq, INRes)
           ),
           InformResponse()
         )

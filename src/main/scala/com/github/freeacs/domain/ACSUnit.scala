@@ -1,22 +1,20 @@
 package com.github.freeacs.domain
+import com.github.freeacs.domain.ACSUnit.UnitId.UnitId
+import shapeless.tag.@@
 
 case class ACSUnit(
-    unitId: String,
+    unitId: UnitId,
     unitType: ACSUnitType,
     profile: ACSProfile,
     params: Seq[ACSUnitParameter] = Seq.empty
 )
 
 object ACSUnit {
-  type ACSUnitTupleType = (String, Long, Long)
+  object UnitId {
+    trait Tag
+    type UnitId = String @@ Tag
 
-  def toTuple(unit: ACSUnit): ACSUnitTupleType =
-    (unit.unitId, unit.unitType.unitTypeId.get, unit.profile.profileId.get)
-
-  def fromTuple(tuple: ACSUnitTupleType): ACSUnit =
-    ACSUnit(
-      tuple._1,
-      ACSUnitType.fromId(tuple._2),
-      ACSProfile.fromId(tuple._3, tuple._2)
-    )
+    def apply(v: String): UnitId =
+      shapeless.tag[Tag][String](v)
+  }
 }
