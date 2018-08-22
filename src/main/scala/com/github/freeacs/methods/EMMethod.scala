@@ -3,8 +3,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import com.github.freeacs.config.SystemParameters._
+import com.github.freeacs.domain.ACSUnitTypeParameter.ACSUnitTypeParameterTupleType
 import com.github.freeacs.repositories.DaoService
-import com.github.freeacs.session.SessionState.UnitTypeParameterType
 import com.github.freeacs.session._
 import com.github.freeacs.xml.{
   EmptyRequest,
@@ -108,14 +108,14 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
 
   private[this] def mkParameter(
       user: String,
-      unitTypeParams: List[UnitTypeParameterType],
+      unitTypeParams: List[ACSUnitTypeParameterTupleType],
       param: String,
       value: String
   ): List[(String, String, Long)] = {
     unitTypeParams
       .find(p => p._2 == param)
       .map {
-        case (Some(utpId), _, _, _) =>
+        case (_, _, _, Some(utpId)) =>
           List((user, value, utpId))
         case _ => List.empty
       }

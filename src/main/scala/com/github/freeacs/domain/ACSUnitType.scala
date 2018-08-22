@@ -9,3 +9,12 @@ final case class ACSUnitType(
     description: Option[String] = None,
     params: Seq[ACSUnitTypeParameter] = Seq.empty
 )
+
+object ACSUnitType {
+  def fromId(id: Long): ACSUnitType =
+    ACSUnitType(
+      unitTypeName = "",
+      protocol = "",
+      unitTypeId = Some(id)
+    )
+}
