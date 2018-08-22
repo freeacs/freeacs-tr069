@@ -30,7 +30,7 @@ trait Server {
   )
 
   val cacheActor   = system.actorOf(SessionCache.props)
-  val services     = new DaoService(dbConfig, cacheActor)
+  val services     = new DaoService(dbConfig)
   val conversation = new SessionService(services, config, cacheActor)
 
   val routes = new Routes(breaker, services, config, conversation)
