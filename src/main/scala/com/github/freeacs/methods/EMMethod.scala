@@ -116,7 +116,7 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
     unitTypeParams
       .find(p => p._1 == param)
       .map {
-        case (_, _, _, Some(utpId)) =>
+        case (_, _, _, utpId) =>
           List(
             (
               user,

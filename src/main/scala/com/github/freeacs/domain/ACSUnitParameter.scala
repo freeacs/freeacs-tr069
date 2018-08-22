@@ -12,12 +12,12 @@ case class ACSUnitParameter(
 object ACSUnitParameter {
 
   type ACSUnitParameterTupleType =
-    (String, Long, Option[String])
+    (String, Option[Long], Option[String])
 
   def toTuple(parameter: ACSUnitParameter): ACSUnitParameterTupleType =
     (
       parameter.unitId.toString,
-      parameter.unitTypeParameter.unitTypeParamId.get.toLong,
+      parameter.unitTypeParameter.unitTypeParamId.map(_.toLong),
       parameter.value.map(_.toString)
     )
 

@@ -65,7 +65,7 @@ class UnitParameterDao(val config: DatabaseConfig[JdbcProfile])(
     )
   def createOrUpdate(tuple: ACSUnitParameterTupleType): DBIO[Int] = {
     val unitId          = tuple._1
-    val unitTypeParamId = tuple._2
+    val unitTypeParamId = tuple._2.get
     val unitParamValue  = tuple._3.getOrElse("")
     sqlu"""insert into #$tableName(unit_id, unit_type_param_id, value)
            values('#$unitId', #$unitTypeParamId, '#$unitParamValue')
