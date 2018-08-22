@@ -27,7 +27,6 @@ import scala.xml.NodeSeq
 class Routes(
     breaker: CircuitBreaker,
     services: DaoService,
-    authService: AuthService,
     config: Configuration,
     conversation: SessionService
 )(implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
@@ -45,7 +44,7 @@ class Routes(
       post {
         path("tr069") {
           logRequestResult("tr069") {
-            authenticateConversation(authService.getSecret, config.authMethod) {
+            authenticateConversation(services.getUnitSecret, config.authMethod) {
               case (user, context) =>
                 entity(as[SOAPRequest]) { soapRequest =>
                   complete(handle(soapRequest, user, context))

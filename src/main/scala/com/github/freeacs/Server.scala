@@ -30,17 +30,10 @@ trait Server {
   )
 
   val services     = new DaoService(dbConfig)
-  val authService  = new AuthService(services)
   val cacheActor   = system.actorOf(SessionCache.props)
   val conversation = new SessionService(services, config, cacheActor)
 
-  val routes = new Routes(
-    breaker,
-    services,
-    authService,
-    config,
-    conversation
-  )
+  val routes = new Routes(breaker, services, config, conversation)
 
   val server = Http().bindAndHandle(routes.routes, hostname, port)
 
