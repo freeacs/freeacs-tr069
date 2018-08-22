@@ -73,8 +73,9 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
           LAST_CONNECT_TMS,
           currentTimestamp
         ),
-        state.unitParams
+        state.unitTypeParams
           .find(_._2 == FIRST_CONNECT_TMS)
+          .flatMap(p => state.unitParams.find(up => p._4.contains(up._3)))
           .map(_ => List.empty)
           .getOrElse(
             mkParameter(
