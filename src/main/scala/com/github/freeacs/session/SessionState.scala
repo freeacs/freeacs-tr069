@@ -1,6 +1,8 @@
 package com.github.freeacs.session
 
 import akka.cluster.ddata.ReplicatedData
+import com.github.freeacs.domain.ACSUnitParameter.ACSUnitParameterTupleType
+import com.github.freeacs.domain.ACSUnitTypeParameter.ACSUnitTypeParameterTupleType
 import com.github.freeacs.session.SessionState._
 import com.github.freeacs.methods._
 import com.github.freeacs.repositories.DaoService
@@ -9,9 +11,7 @@ import com.github.freeacs.xml._
 import scala.concurrent.{ExecutionContext, Future}
 
 object SessionState {
-  type UnitParameterType     = (Option[Long], String, Option[String])
-  type UnitTypeParameterType = (Option[Long], String, String, Long)
-  type HistoryType           = (HistoryItem, HistoryItem)
+  type HistoryType = (HistoryItem, HistoryItem)
 }
 
 final case class SessionState(
@@ -25,8 +25,8 @@ final case class SessionState(
     profileId: Option[Long] = None,
     softwareVersion: Option[String] = None,
     serialNumber: Option[String] = None,
-    unitParams: List[UnitParameterType] = List.empty,
-    unitTypeParams: List[UnitTypeParameterType] = List.empty
+    unitParams: List[ACSUnitParameterTupleType] = List.empty,
+    unitTypeParams: List[ACSUnitTypeParameterTupleType] = List.empty
 ) extends ReplicatedData {
 
   type T = SessionState

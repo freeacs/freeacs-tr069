@@ -33,10 +33,10 @@ object INMethod extends AbstractMethod[InformRequest] {
           unitTypeId = unit.flatMap(_.unitType.unitTypeId),
           profileId = unit.flatMap(_.profile.profileId),
           unitParams = unit
-            .map(_.params.map(toUnitParameterTuple).toList)
+            .map(_.params.map(ACSUnitParameter.toTuple).toList)
             .getOrElse(List.empty),
           unitTypeParams = unit
-            .map(_.unitType.params.map(toUnitTypeParameterTuple).toList)
+            .map(_.unitType.params.map(ACSUnitTypeParameter.toTuple).toList)
             .getOrElse(List.empty)
         )
       }
@@ -50,26 +50,6 @@ object INMethod extends AbstractMethod[InformRequest] {
           InformResponse()
         )
       })
-  }
-
-  private[this] def toUnitParameterTuple(
-      p: ACSUnitParameter
-  ): UnitParameterType = {
-    (
-      p.unitTypeParameter.unitTypeParamId,
-      p.unitTypeParameter.name,
-      p.value
-    )
-  }
-  private[this] def toUnitTypeParameterTuple(
-      p: ACSUnitTypeParameter
-  ): UnitTypeParameterType = {
-    (
-      p.unitTypeParamId,
-      p.name,
-      p.flags,
-      p.unitTypeId
-    )
   }
 
   private[this] case class InformParams(params: Seq[ParameterValueStruct]) {
