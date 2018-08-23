@@ -3,6 +3,8 @@ package com.github.freeacs.session
 import akka.cluster.ddata.ReplicatedData
 import com.github.freeacs.domain.ACSUnitParameter.ACSUnitParameterTupleType
 import com.github.freeacs.domain.ACSUnitTypeParameter.ACSUnitTypeParameterTupleType
+import com.github.freeacs.domain.unitParameter.ACSUnitParameter
+import com.github.freeacs.domain.unitTypeParameter.ACSUnitTypeParameter
 import com.github.freeacs.methods._
 import com.github.freeacs.repositories.DaoService
 import com.github.freeacs.session.SessionState._
@@ -25,8 +27,8 @@ final case class SessionState(
     profileId: Option[Long] = None,
     softwareVersion: Option[String] = None,
     serialNumber: Option[String] = None,
-    unitParams: List[ACSUnitParameterTupleType] = List.empty,
-    unitTypeParams: List[ACSUnitTypeParameterTupleType] = List.empty
+    unitParams: List[ACSUnitParameter] = List.empty,
+    unitTypeParams: List[ACSUnitTypeParameter] = List.empty
 ) extends ReplicatedData {
 
   type T = SessionState

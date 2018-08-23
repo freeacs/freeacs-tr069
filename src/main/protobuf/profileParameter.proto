@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+option java_package = "com.github.freeacs.domain";
+
+import "unitTypeParameter.proto";
+
+message ACSProfileParameter {
+    required int64 profileId = 1;
+    required ACSUnitTypeParameter unitTypeParameter = 2;
+    optional string value = 3;
+}
