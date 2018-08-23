@@ -1,6 +1,7 @@
 package com.github.freeacs.repositories
 
 import com.github.freeacs.domain.unitType.ACSUnitType
+import com.github.freeacs.domain.unitType.ACSUnitType.Protocol
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
 
@@ -11,6 +12,14 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
 ) extends Dao {
 
   import config.profile.api._
+
+  implicit val getUnitTypeProtocol = GetResult(
+    r =>
+      r.<<[String] match {
+        case Protocol.TR069.name => Protocol.TR069
+        case _                   => Protocol.OTHER
+    }
+  )
 
   implicit val getUnitTypeResult = GetResult(
     r => ACSUnitType(r.<<, r.<<, r.<<?, r.<<?, r.<<?, r.<<?)

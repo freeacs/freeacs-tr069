@@ -4,7 +4,6 @@ import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata.protobuf.SerializationSupport
 import akka.serialization.Serializer
 import com.github.freeacs.session.sessionState.SessionState
-import pbdirect._
 
 class SessionStateSerializer(val system: ExtendedActorSystem)
     extends Serializer
@@ -15,7 +14,7 @@ class SessionStateSerializer(val system: ExtendedActorSystem)
   override def identifier: Int = 99999
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case s: SessionState => s.toPB
+    case s: SessionState => s.toByteArray
     case _ ⇒
       throw new IllegalArgumentException(
         s"Can't serialize object of type ${obj.getClass}"
@@ -25,5 +24,5 @@ class SessionStateSerializer(val system: ExtendedActorSystem)
   override def fromBinary(
       bytes: Array[Byte],
       manifest: Option[Class[_]]
-  ): AnyRef = bytes.pbTo[SessionState]
+  ): AnyRef = SessionState.parseFrom(bytes)
 }

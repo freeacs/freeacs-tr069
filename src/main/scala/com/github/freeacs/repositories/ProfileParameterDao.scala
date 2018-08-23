@@ -1,6 +1,7 @@
 package com.github.freeacs.repositories
 
 import com.github.freeacs.domain.profileParameter.ACSProfileParameter
+import com.github.freeacs.domain.unitTypeParameter.ACSUnitTypeParameter
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
 
@@ -11,6 +12,10 @@ class ProfileParameterDao(val config: DatabaseConfig[JdbcProfile])(
 ) extends Dao {
 
   import config.profile.api._
+
+  implicit val getUnitTypeParameterResult = GetResult(
+    r => ACSUnitTypeParameter(r.<<, r.<<, r.<<, r.<<?)
+  )
 
   implicit val getProfileParameterResult = GetResult(
     r => ACSProfileParameter(r.<<, r.<<, r.<<?)

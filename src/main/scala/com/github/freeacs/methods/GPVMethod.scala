@@ -1,11 +1,12 @@
 package com.github.freeacs.methods
 import com.github.freeacs.repositories.DaoService
-import com.github.freeacs.session.{
-  ExpectSetParameterValuesResponse,
+import com.github.freeacs.session.sessionState.SessionState
+import com.github.freeacs.session.sessionState.SessionState.History
+import com.github.freeacs.session.sessionState.SessionState.HistoryItem.{
   GPVRes,
-  SPVReq,
-  SessionStateTransformer
+  SPVReq
 }
+import com.github.freeacs.session.sessionState.SessionState.State.ExpectSetParameterValuesResponse
 import com.github.freeacs.xml.{
   GetParameterValuesResponse,
   SOAPResponse,
@@ -26,7 +27,7 @@ object GPVMethod extends AbstractMethod[GetParameterValuesResponse] {
       (
         sessionState.copy(
           state = ExpectSetParameterValuesResponse,
-          history = (sessionState.history :+ (GPVRes, SPVReq))
+          history = sessionState.history :+ History(GPVRes, SPVReq)
         ),
         response
       )
