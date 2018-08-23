@@ -3,10 +3,18 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import com.github.freeacs.config.SystemParameters._
-import com.github.freeacs.domain.ACSUnitParameter.ACSUnitParameterTupleType
-import com.github.freeacs.domain.ACSUnitTypeParameter.ACSUnitTypeParameterTupleType
+import com.github.freeacs.domain.unitParameter
+import com.github.freeacs.domain.unitParameter.ACSUnitParameter
+import com.github.freeacs.domain.unitTypeParameter.ACSUnitTypeParameter
 import com.github.freeacs.repositories.DaoService
-import com.github.freeacs.session._
+import com.github.freeacs.session.sessionState.SessionState
+import com.github.freeacs.session.sessionState.SessionState.History
+import com.github.freeacs.session.sessionState.SessionState.HistoryItem.{
+  EM,
+  GPNReq,
+  INReq
+}
+import com.github.freeacs.session.sessionState.SessionState.State.ExpectGetParameterNamesResponse
 import com.github.freeacs.xml.{
   EmptyRequest,
   GetParameterNamesRequest,
@@ -27,12 +35,12 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
       )
       Future.successful(resetConversation(sessionState))
     } else {
-      val previousMethod = sessionState.history.last._1
+      val previousMethod = sessionState.history.last.request
       if (previousMethod == EM) {
         log.info("EM-Decision is EM since two last responses from CPE was EM")
         Future.successful(resetConversation(sessionState))
       } else if (Seq(INReq).contains(previousMethod)) {
-        if (sessionState.unitTypeId.isEmpty) {
+        if (sessionState.acsUnit.isEmpty) {
           log.info("EM-Decision is EM since unit is not found")
           Future.successful(resetConversation(sessionState))
         } else {
@@ -43,7 +51,7 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
             (
               sessionState.copy(
                 state = ExpectGetParameterNamesResponse,
-                history = (sessionState.history :+ (EM, GPNReq))
+                history = sessionState.history :+ History(EM, GPNReq)
               ),
               response
             )
@@ -74,8 +82,13 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
           currentTimestamp
         ),
         state.unitTypeParams
-          .find(_._2 == FIRST_CONNECT_TMS)
-          .flatMap(p => state.unitParams.find(up => p._4.contains(up._2)))
+          .find(_.name == FIRST_CONNECT_TMS)
+          .flatMap(
+            p =>
+              state.unitParams.find(
+                up => p.name.contains(up.unitTypeParameter.name)
+            )
+          )
           .map(_ => List.empty)
           .getOrElse(
             mkParameter(
@@ -109,22 +122,20 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
 
   private[this] def mkParameter(
       user: String,
-      unitTypeParams: List[ACSUnitTypeParameterTupleType],
+      unitTypeParams: Seq[ACSUnitTypeParameter],
       param: String,
       value: String
-  ): List[ACSUnitParameterTupleType] = {
+  ): List[ACSUnitParameter] = {
     unitTypeParams
-      .find(p => p._1 == param)
-      .map {
-        case (_, _, _, utpId) =>
-          List(
-            (
-              user,
-              utpId,
-              Some(value)
-            )
+      .find(p => p.name == param)
+      .map { utp =>
+        List(
+          unitParameter.ACSUnitParameter(
+            user,
+            utp,
+            Some(value)
           )
-        case _ => List.empty
+        )
       }
       .getOrElse(List.empty)
   }

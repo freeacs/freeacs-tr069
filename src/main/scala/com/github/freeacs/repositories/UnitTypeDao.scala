@@ -1,6 +1,6 @@
 package com.github.freeacs.repositories
 
-import com.github.freeacs.domain.ACSUnitType
+import com.github.freeacs.domain.unitType.ACSUnitType
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
 
@@ -13,7 +13,7 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
   import config.profile.api._
 
   implicit val getUnitTypeResult = GetResult(
-    r => ACSUnitType.fromResultSet(r.<<, r.<<, r.<<?, r.<<?, r.<<?, r.<<?)
+    r => ACSUnitType(r.<<, r.<<, r.<<?, r.<<?, r.<<?, r.<<?)
   )
 
   val tableName = "unit_type"

@@ -1,12 +1,7 @@
 package com.github.freeacs.repositories
 
 import com.github.freeacs.config.SystemParameters
-import com.github.freeacs.domain.ACSUnit.UnitId
-import com.github.freeacs.domain.ACSUnitParameter
-import com.github.freeacs.domain.ACSUnitParameter.{
-  ACSUnitParameterTupleType,
-  UnitParameterValue
-}
+import com.github.freeacs.domain.unitParameter.ACSUnitParameter
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
 
@@ -19,14 +14,6 @@ class UnitParameterDao(val config: DatabaseConfig[JdbcProfile])(
   import config.profile.api._
 
   val utpDao = new UnitTypeParameterDao(config)
-
-  implicit val getUnitId = GetResult(
-    r => UnitId(r.<<)
-  )
-
-  implicit val unitParamValueResult = GetResult(
-    r => r.<<?[String].map(UnitParameterValue.apply)
-  )
 
   implicit val getUnitParameterResult = GetResult(
     r =>
@@ -63,17 +50,17 @@ class UnitParameterDao(val config: DatabaseConfig[JdbcProfile])(
           case _       => None
         })
     )
-  def createOrUpdate(tuple: ACSUnitParameterTupleType): DBIO[Int] = {
-    val unitId          = tuple._1
-    val unitTypeParamId = tuple._2.get
-    val unitParamValue  = tuple._3.getOrElse("")
+  def createOrUpdate(tuple: ACSUnitParameter): DBIO[Int] = {
+    val unitId          = tuple.unitId
+    val unitTypeParamId = tuple.unitTypeParameter.id.get
+    val unitParamValue  = tuple.value.getOrElse("")
     sqlu"""insert into #$tableName(unit_id, unit_type_param_id, value)
            values('#$unitId', #$unitTypeParamId, '#$unitParamValue')
            ON DUPLICATE KEY UPDATE value='#$unitParamValue';"""
   }
 
   def createOrUpdateUnitParams(
-      params: Seq[ACSUnitParameterTupleType]
+      params: Seq[ACSUnitParameter]
   ): Future[Int] =
     db.run(DBIO.sequence(params.map(createOrUpdate)).transactionally).map(_.sum)
 }

@@ -9,6 +9,8 @@ import com.github.freeacs.session.SessionCache.{
   GetFromCache,
   PutInCache
 }
+import com.github.freeacs.session.sessionState.SessionState
+import com.github.freeacs.session.sessionState.SessionState.State.ExpectInformRequest
 import com.github.freeacs.xml.{SOAPRequest, SOAPResponse}
 import com.github.jarlah.authenticscala.AuthenticationContext
 
@@ -32,24 +34,32 @@ class SessionService(
       case Cached(_: String, maybeState: Option[Any]) =>
         maybeState match {
           case Some(state) =>
-            state.asInstanceOf[SessionState].transition(services, request).map {
-              result =>
+            SessionStateTransformer
+              .transition(state.asInstanceOf[SessionState], services, request)
+              .map { result =>
                 cacheActor ! PutInCache(
                   username,
                   result._1.copy(modified = System.currentTimeMillis())
                 )
                 result._2
-            }
+              }
           case _ =>
-            SessionState(
-              user = username,
-              modified = System.currentTimeMillis(),
-              state = ExpectInformRequest,
-              remoteAddress = context.remoteAddress
-            ).transition(services, request).map { result =>
-              cacheActor ! PutInCache(username, result._1)
-              result._2
-            }
+            SessionStateTransformer
+              .transition(
+                SessionState(
+                  user = username,
+                  modified = System.currentTimeMillis(),
+                  state = ExpectInformRequest,
+                  remoteAddress = context.remoteAddress,
+                  errorCount = 0
+                ),
+                services,
+                request
+              )
+              .map { result =>
+                cacheActor ! PutInCache(username, result._1)
+                result._2
+              }
         }
     }
   }

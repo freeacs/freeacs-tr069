@@ -20,7 +20,12 @@ message SessionState {
     repeated ACSUnitTypeParameter unitTypeParams = 11;
 
     enum State {
-        ExpectEmptyRequest = 1;
+        ExpectInformRequest = 1;
+        ExpectEmptyRequest = 2;
+        ExpectGetParameterNamesResponse = 3;
+        ExpectGetParameterValuesResponse = 4;
+        ExpectSetParameterValuesResponse = 5;
+        ExpectRebootResponse = 6;
     }
 
     message History {

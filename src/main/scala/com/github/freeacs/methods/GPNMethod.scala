@@ -4,7 +4,7 @@ import com.github.freeacs.session.{
   ExpectGetParameterValuesResponse,
   GPNRes,
   GPVReq,
-  SessionState
+  SessionStateTransformer
 }
 import com.github.freeacs.xml.{
   GetParameterNamesResponse,
