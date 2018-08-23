@@ -43,4 +43,9 @@ libraryDependencies ++= Seq(
   "beyondthelines" %% "pbdirect" % "0.1.0"
 )
 
+managedSourceDirectories in Compile += target.value / "protobuf-generated"
+
+PB.targets in Compile := Seq(
+  scalapb.gen() -> (target.value / "protobuf-generated")
+)
 
