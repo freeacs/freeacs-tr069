@@ -18,10 +18,13 @@ class ProfileDao(val config: DatabaseConfig[JdbcProfile])(
     r => ACSProfile(r.<<, unitTypeDao.getUnitTypeResult(r), r.<<)
   )
 
-  val tableName = "profile"
+  val tableName         = "profile"
+  val unitTypeTableName = Some(unitTypeDao.tableName)
+  val unitTypeColumns   = unitTypeDao.columns(unitTypeTableName)
 
-  def columns(prefix: Option[String] = None) =
-    s"$tableName.profile_name, ${unitTypeDao.columns(Some(unitTypeDao.tableName))}, $tableName.profile_id"
+  def columns(prefix: Option[String] = None): String = {
+    s"$tableName.profile_name, $unitTypeColumns, $tableName.profile_id"
+  }
 
   private val columnsStr = columns(None)
 
@@ -30,19 +33,14 @@ class ProfileDao(val config: DatabaseConfig[JdbcProfile])(
 
   def getAll: Future[Seq[ACSProfile]] = db.run(getAllQuery)
 
-  def getByIdQuery(profileId: Long) =
-    sql"""select #$columnsStr from #$tableName as #$tableName, #${unitTypeDao.tableName} as #${unitTypeDao.tableName}
-          where #$tableName.profile_id = $profileId and #$tableName.unit_type_id = #${unitTypeDao.tableName}.unit_type_id
+  def getByIdQuery(profileId: Long): DBIO[Option[ACSProfile]] =
+    sql"""select  #$columnsStr
+          from    #$tableName as #$tableName,
+                  #${unitTypeDao.tableName} as #${unitTypeDao.tableName}
+          where   #$tableName.profile_id = $profileId and
+                  #$tableName.unit_type_id = #${unitTypeDao.tableName}.unit_type_id
       """.as[ACSProfile].headOption
 
   def getById(profileId: Long): Future[Option[ACSProfile]] =
     db.run(getByIdQuery(profileId))
-
-  def getByNameQuery(profileName: String) =
-    sql"""select #$columnsStr from #$tableName
-          where profile_name= '$profileName'
-       """.as[ACSProfile].headOption
-
-  def getByName(profileName: String): Future[Option[ACSProfile]] =
-    db.run(getByNameQuery(profileName))
 }

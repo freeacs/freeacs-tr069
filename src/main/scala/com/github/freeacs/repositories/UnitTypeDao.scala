@@ -27,7 +27,7 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
 
   val tableName = "unit_type"
 
-  def columns(prefix: Option[String] = None) =
+  def columns(prefix: Option[String] = None): String =
     super.getColumns(
       Seq(
         "unit_type_name",
@@ -41,11 +41,6 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
     )
 
   private val columnsStr = columns()
-
-  def getAllQuery: DBIO[Seq[ACSUnitType]] =
-    sql"""select #$columnsStr from #$tableName""".as[ACSUnitType]
-
-  def getAll: Future[Seq[ACSUnitType]] = db.run(getAllQuery)
 
   def getByIdQuery(id: Long): DBIO[Option[ACSUnitType]] =
     sql"""select #$columnsStr from #$tableName

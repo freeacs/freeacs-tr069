@@ -4,7 +4,7 @@ import com.github.freeacs.domain.unitTypeParameter.ACSUnitTypeParameter
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 class UnitTypeParameterDao(val config: DatabaseConfig[JdbcProfile])(
     implicit ec: ExecutionContext
@@ -18,7 +18,7 @@ class UnitTypeParameterDao(val config: DatabaseConfig[JdbcProfile])(
 
   val tableName = "unit_type_param"
 
-  def columns(prefix: Option[String] = None) =
+  def columns(prefix: Option[String] = None): String =
     super.getColumns(
       Seq("name", "flags", "unit_type_id", "unit_type_param_id"),
       prefix
@@ -29,9 +29,4 @@ class UnitTypeParameterDao(val config: DatabaseConfig[JdbcProfile])(
          select #${columns()} from #$tableName
          where unit_type_id = $unitTypeId
        """.as[ACSUnitTypeParameter]
-
-  def getAllQuery: DBIO[Seq[ACSUnitTypeParameter]] =
-    sql"""select #${columns()} from #$tableName""".as[ACSUnitTypeParameter]
-
-  def getAll: Future[Seq[ACSUnitTypeParameter]] = db.run(getAllQuery)
 }
