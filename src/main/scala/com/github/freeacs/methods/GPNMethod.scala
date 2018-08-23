@@ -1,11 +1,12 @@
 package com.github.freeacs.methods
 import com.github.freeacs.repositories.DaoService
-import com.github.freeacs.session.{
-  ExpectGetParameterValuesResponse,
+import com.github.freeacs.session.sessionState.SessionState
+import com.github.freeacs.session.sessionState.SessionState.History
+import com.github.freeacs.session.sessionState.SessionState.HistoryItem.{
   GPNRes,
-  GPVReq,
-  SessionState
+  GPVReq
 }
+import com.github.freeacs.session.sessionState.SessionState.State.ExpectGetParameterValuesResponse
 import com.github.freeacs.xml.{
   GetParameterNamesResponse,
   GetParameterValuesRequest,
@@ -23,13 +24,13 @@ object GPNMethod extends AbstractMethod[GetParameterNamesResponse] {
     log.info("Got GPNRes. Returning GPVReq. " + request.toString)
     val response =
       GetParameterValuesRequest(
-        Seq(("InternetGatewayDevice.ManagementServer.Username"))
+        Seq("InternetGatewayDevice.ManagementServer.Username")
       )
     Future.successful(
       (
         sessionState.copy(
           state = ExpectGetParameterValuesResponse,
-          history = (sessionState.history :+ (GPNRes, GPVReq))
+          history = sessionState.history :+ History(GPNRes, GPVReq)
         ),
         response
       )

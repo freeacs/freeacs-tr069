@@ -1,12 +1,12 @@
 package com.github.freeacs.methods
-import com.github.freeacs.domain.{ACSUnitParameter, ACSUnitTypeParameter}
 import com.github.freeacs.repositories.DaoService
-import com.github.freeacs.session.{
-  ExpectEmptyRequest,
+import com.github.freeacs.session.sessionState.SessionState
+import com.github.freeacs.session.sessionState.SessionState.History
+import com.github.freeacs.session.sessionState.SessionState.HistoryItem.{
   INReq,
-  INRes,
-  SessionState
+  INRes
 }
+import com.github.freeacs.session.sessionState.SessionState.State.ExpectEmptyRequest
 import com.github.freeacs.xml.{
   InformRequest,
   InformResponse,
@@ -29,14 +29,9 @@ object INMethod extends AbstractMethod[InformRequest] {
         sessionState.copy(
           serialNumber = request.serialNumber,
           softwareVersion = cpeParams.swVersion.map(_.value),
-          unitTypeId = unit.flatMap(_.unitType.unitTypeId),
-          profileId = unit.flatMap(_.profile.profileId),
-          unitParams = unit
-            .map(_.params.map(ACSUnitParameter.toTuple).toList)
-            .getOrElse(List.empty),
-          unitTypeParams = unit
-            .map(_.unitType.params.map(ACSUnitTypeParameter.toTuple).toList)
-            .getOrElse(List.empty)
+          acsUnit = unit,
+          unitParams = unit.map(_.params).getOrElse(List.empty),
+          unitTypeParams = unit.map(_.unitType.params).getOrElse(List.empty)
         )
       }
       .map(state => {
@@ -44,7 +39,7 @@ object INMethod extends AbstractMethod[InformRequest] {
         (
           state.copy(
             state = ExpectEmptyRequest,
-            history = state.history :+ (INReq, INRes)
+            history = state.history :+ History(INReq, INRes)
           ),
           InformResponse()
         )

@@ -1,0 +1,19 @@
+syntax = "proto2";
+
+option java_package = "com.github.freeacs.domain";
+
+import "unitTypeParameter.proto";
+
+message ACSUnitType {
+    required string name = 1;
+    required Protocol protocol = 2;
+    optional int64 id = 3;
+    optional string matcherId = 4;
+    optional string vendorName = 5;
+    optional string description = 6;
+    repeated ACSUnitTypeParameter params = 7;
+    enum Protocol {
+        TR069 = 0;
+        OTHER = 1;
+    }
+}

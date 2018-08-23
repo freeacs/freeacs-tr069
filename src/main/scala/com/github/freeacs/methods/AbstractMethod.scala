@@ -1,6 +1,7 @@
 package com.github.freeacs.methods
 import com.github.freeacs.repositories.DaoService
-import com.github.freeacs.session.{ExpectInformRequest, SessionState}
+import com.github.freeacs.session.sessionState.SessionState
+import com.github.freeacs.session.sessionState.SessionState.State.ExpectInformRequest
 import com.github.freeacs.xml.{EmptyResponse, SOAPRequest, SOAPResponse}
 import org.slf4j.LoggerFactory
 
@@ -24,7 +25,8 @@ trait AbstractMethod[T <: SOAPRequest] {
         user = sessionState.user,
         modified = System.currentTimeMillis(),
         state = ExpectInformRequest,
-        remoteAddress = sessionState.remoteAddress
+        remoteAddress = sessionState.remoteAddress,
+        errorCount = 0
       ),
       EmptyResponse()
     )

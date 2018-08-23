@@ -1,6 +1,7 @@
 package com.github.freeacs.repositories
 
-import com.github.freeacs.domain.ACSUnitType
+import com.github.freeacs.domain.unitType.ACSUnitType
+import com.github.freeacs.domain.unitType.ACSUnitType.Protocol
 import slick.basic.DatabaseConfig
 import slick.jdbc.{GetResult, JdbcProfile}
 
@@ -12,13 +13,21 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
 
   import config.profile.api._
 
+  implicit val getUnitTypeProtocol = GetResult(
+    r =>
+      r.<<[String] match {
+        case Protocol.TR069.name => Protocol.TR069
+        case _                   => Protocol.OTHER
+    }
+  )
+
   implicit val getUnitTypeResult = GetResult(
-    r => ACSUnitType.fromResultSet(r.<<, r.<<, r.<<?, r.<<?, r.<<?, r.<<?)
+    r => ACSUnitType(r.<<, r.<<, r.<<?, r.<<?, r.<<?, r.<<?)
   )
 
   val tableName = "unit_type"
 
-  def columns(prefix: Option[String] = None) =
+  def columns(prefix: Option[String] = None): String =
     super.getColumns(
       Seq(
         "unit_type_name",
@@ -32,11 +41,6 @@ class UnitTypeDao(val config: DatabaseConfig[JdbcProfile])(
     )
 
   private val columnsStr = columns()
-
-  def getAllQuery: DBIO[Seq[ACSUnitType]] =
-    sql"""select #$columnsStr from #$tableName""".as[ACSUnitType]
-
-  def getAll: Future[Seq[ACSUnitType]] = db.run(getAllQuery)
 
   def getByIdQuery(id: Long): DBIO[Option[ACSUnitType]] =
     sql"""select #$columnsStr from #$tableName

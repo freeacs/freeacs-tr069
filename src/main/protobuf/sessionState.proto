@@ -1,0 +1,47 @@
+syntax = "proto2";
+
+option java_package = "com.github.freeacs.session";
+
+import "unit.proto";
+import "unitParameter.proto";
+import "unitTypeParameter.proto";
+
+message SessionState {
+    required string user = 1;
+    required int64 modified = 2;
+    required State state = 3;
+    required string remoteAddress = 4;
+    required int64 errorCount = 5;
+    repeated History history = 6;
+    optional ACSUnit acsUnit = 7;
+    optional string softwareVersion = 8;
+    optional string serialNumber = 9;
+    repeated ACSUnitParameter unitParams = 10;
+    repeated ACSUnitTypeParameter unitTypeParams = 11;
+
+    enum State {
+        ExpectInformRequest = 1;
+        ExpectEmptyRequest = 2;
+        ExpectGetParameterNamesResponse = 3;
+        ExpectGetParameterValuesResponse = 4;
+        ExpectSetParameterValuesResponse = 5;
+        ExpectRebootResponse = 6;
+    }
+
+    message History {
+        required HistoryItem request = 1;
+        required HistoryItem response = 2;
+    }
+
+    enum HistoryItem {
+        EM = 1;
+        INRes = 2;
+        INReq = 3;
+        GPNRes = 4;
+        GPNReq = 5;
+        GPVRes = 6;
+        GPVReq = 7;
+        SPVRes = 8;
+        SPVReq = 9;
+    }
+}
