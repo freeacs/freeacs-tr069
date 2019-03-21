@@ -32,11 +32,10 @@ class Routes(
 )(implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
     extends Directives
     with Auth {
+  private val log = LoggerFactory.getLogger(getClass)
 
   val passwordRetriever    = service.getUnitSecret
   val authenticationMethod = config.authMethod
-
-  private val log = LoggerFactory.getLogger(getClass)
 
   def routes: Route =
     get {
@@ -57,7 +56,7 @@ class Routes(
         }
       }
 
-  def handle(
+  private def handle(
       request: SOAPRequest,
       user: String,
       context: AuthenticationContext
@@ -94,7 +93,7 @@ class Routes(
       }
   }
 
-  def makeResponse(
+  private def makeResponse(
       status: StatusCode,
       payload: Option[String] = None,
       charset: MediaType.WithOpenCharset = MediaTypes.`text/plain`

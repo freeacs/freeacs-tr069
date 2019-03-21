@@ -17,10 +17,8 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 class AppSpec extends WordSpec with Matchers with ScalatestRouteTest {
-  val duration        = FiniteDuration(1, TimeUnit.SECONDS)
-  val breaker         = new CircuitBreaker(system.scheduler, 1, duration, duration)
-  val responseTimeout = FiniteDuration(1, TimeUnit.SECONDS)
-  val actorTimeout    = FiniteDuration(1, TimeUnit.SECONDS)
+  val duration = FiniteDuration(1, TimeUnit.SECONDS)
+  val breaker  = new CircuitBreaker(system.scheduler, 1, duration, duration)
   val configuration = new Configuration {
     val dbConfig = new DatabaseConfig[JdbcProfile]() {
       override def db: JdbcBackend#DatabaseDef = null
@@ -30,21 +28,16 @@ class AppSpec extends WordSpec with Matchers with ScalatestRouteTest {
       override def profileName: String         = null
       override def profileIsObject: Boolean    = false
     }
-    val responseTimeout: FiniteDuration = FiniteDuration(1, TimeUnit.SECONDS)
-    val actorTimeout: FiniteDuration    = FiniteDuration(1, TimeUnit.SECONDS)
-    val maxFailures: Int                = 1
-    val callTimeout: FiniteDuration     = FiniteDuration(1, TimeUnit.SECONDS)
-    val resetTimeout: FiniteDuration    = FiniteDuration(1, TimeUnit.SECONDS)
-    val hostname: String                = "test"
-    val port: Int                       = -1
-    val authMethod: String              = "basic"
-    val digestRealm: String             = "test"
-    val digestQop: String               = "test"
-    val digestSecret: String            = "test"
-    val basicRealm: String              = "test"
-    val name: String                    = "test"
-    val mode: String                    = "chunked"
-    val nonceTTL                        = 1000
+    val responseTimeout = FiniteDuration(1, TimeUnit.SECONDS)
+    val actorTimeout    = FiniteDuration(1, TimeUnit.SECONDS)
+    val maxFailures     = 1
+    val callTimeout     = FiniteDuration(1, TimeUnit.SECONDS)
+    val resetTimeout    = FiniteDuration(1, TimeUnit.SECONDS)
+    val hostname        = "test"
+    val port            = -1
+    val authMethod      = "basic"
+    val name            = "test"
+    val mode            = "chunked"
   }
   val routes = new Routes(
     breaker,
