@@ -1,7 +1,7 @@
 package com.github.freeacs.session
 
 import com.github.freeacs.methods._
-import com.github.freeacs.repositories.DaoService
+import com.github.freeacs.services.UnitService
 import com.github.freeacs.session.sessionState.SessionState
 import com.github.freeacs.session.sessionState.SessionState.State.{
   ExpectEmptyRequest,
@@ -18,7 +18,7 @@ object SessionStateTransformer {
 
   def transition(
       state: SessionState,
-      services: DaoService,
+      services: UnitService,
       request: SOAPRequest
   )(
       implicit ec: ExecutionContext

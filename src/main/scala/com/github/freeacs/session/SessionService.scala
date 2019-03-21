@@ -3,7 +3,7 @@ package com.github.freeacs.session
 import akka.actor.ActorRef
 import akka.pattern.ask
 import com.github.freeacs.config.Configuration
-import com.github.freeacs.repositories.DaoService
+import com.github.freeacs.services.UnitService
 import com.github.freeacs.session.SessionCache.{
   Cached,
   GetFromCache,
@@ -18,7 +18,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 class SessionService(
-    services: DaoService,
+    unitService: UnitService,
     config: Configuration,
     cacheActor: ActorRef
 )(implicit ec: ExecutionContext) {
@@ -35,7 +35,11 @@ class SessionService(
         maybeState match {
           case Some(state) =>
             SessionStateTransformer
-              .transition(state.asInstanceOf[SessionState], services, request)
+              .transition(
+                state.asInstanceOf[SessionState],
+                unitService,
+                request
+              )
               .map { result =>
                 cacheActor ! PutInCache(
                   username,
@@ -53,7 +57,7 @@ class SessionService(
                   remoteAddress = context.remoteAddress,
                   errorCount = 0
                 ),
-                services,
+                unitService,
                 request
               )
               .map { result =>

@@ -1,5 +1,5 @@
 package com.github.freeacs.methods
-import com.github.freeacs.repositories.DaoService
+import com.github.freeacs.services.UnitService
 import com.github.freeacs.session.sessionState.SessionState
 import com.github.freeacs.session.sessionState.SessionState.History
 import com.github.freeacs.session.sessionState.SessionState.HistoryItem.{
@@ -19,7 +19,7 @@ object GPNMethod extends AbstractMethod[GetParameterNamesResponse] {
   def process(
       request: GetParameterNamesResponse,
       sessionState: SessionState,
-      services: DaoService
+      services: UnitService
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
     log.info("Got GPNRes. Returning GPVReq. " + request.toString)
     val response =

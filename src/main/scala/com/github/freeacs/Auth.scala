@@ -19,14 +19,14 @@ import scala.util.{Failure, Success}
 
 trait Auth { self: Directives =>
 
+  val passwordRetriever: PasswordRetriever
+  val authenticationMethod: String
+
   def authenticateConversation(
-      retriever: PasswordRetriever,
-      authMethod: String
-  )(
       route: ((String, AuthenticationContext)) => Route
   )(implicit ec: ExecutionContext): Route =
-    extractAuthenticationContext { (context) =>
-      onComplete(authenticate(context, retriever, authMethod)) {
+    extractAuthenticationContext { context =>
+      onComplete(authenticate(context, passwordRetriever, authenticationMethod)) {
         case Success(AuthenticationResult(success, maybeUser, maybeError)) =>
           if (success && maybeUser.isDefined) {
             route(
@@ -36,7 +36,7 @@ trait Auth { self: Directives =>
             complete(
               HttpResponse(
                 Unauthorized,
-                challenge(context, authMethod)
+                challenge(context, authenticationMethod)
                   .map(header => RawHeader(header._1, header._2))
                   .to[immutable.Seq]
               ).withEntity(maybeError.getOrElse(""))
@@ -55,7 +55,7 @@ trait Auth { self: Directives =>
         AuthenticationContext(
           request.method.value,
           request.uri.toString(),
-          request.headers.map(h => (h.name() -> h.value())).toMap,
+          request.headers.map(h => h.name() -> h.value()).toMap,
           remoteIp.toIP.map(_.ip.getHostAddress).getOrElse("Unknown")
         )
       )

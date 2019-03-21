@@ -1,4 +1,4 @@
-package com.github.freeacs.repositories
+package com.github.freeacs.daos
 
 import com.github.freeacs.domain.profile.ACSProfile
 import slick.basic.DatabaseConfig

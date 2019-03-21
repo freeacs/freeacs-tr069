@@ -1,5 +1,5 @@
 package com.github.freeacs.methods
-import com.github.freeacs.repositories.DaoService
+import com.github.freeacs.services.UnitService
 import com.github.freeacs.session.sessionState.SessionState
 import com.github.freeacs.session.sessionState.SessionState.History
 import com.github.freeacs.session.sessionState.SessionState.HistoryItem.{
@@ -20,7 +20,7 @@ object INMethod extends AbstractMethod[InformRequest] {
   def process(
       request: InformRequest,
       sessionState: SessionState,
-      services: DaoService
+      services: UnitService
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
     val cpeParams = InformParams(request.params)
     services

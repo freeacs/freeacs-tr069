@@ -12,7 +12,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.github.freeacs.config.Configuration
-import com.github.freeacs.repositories.DaoService
+import com.github.freeacs.services.UnitService
 import com.github.freeacs.session.SessionService
 import com.github.freeacs.xml._
 import com.github.freeacs.xml.marshaller.Marshallers._
@@ -26,14 +26,17 @@ import scala.xml.NodeSeq
 
 class Routes(
     breaker: CircuitBreaker,
-    services: DaoService,
+    service: UnitService,
     config: Configuration,
     conversation: SessionService
 )(implicit mat: Materializer, system: ActorSystem, ec: ExecutionContext)
     extends Directives
     with Auth {
 
-  val log = LoggerFactory.getLogger(getClass)
+  val passwordRetriever    = service.getUnitSecret
+  val authenticationMethod = config.authMethod
+
+  private val log = LoggerFactory.getLogger(getClass)
 
   def routes: Route =
     get {
@@ -44,7 +47,7 @@ class Routes(
       post {
         path("tr069") {
           logRequestResult("tr069") {
-            authenticateConversation(services.getUnitSecret, config.authMethod) {
+            authenticateConversation {
               case (user, context) =>
                 entity(as[SOAPRequest]) { soapRequest =>
                   complete(handle(soapRequest, user, context))
@@ -58,31 +61,25 @@ class Routes(
       request: SOAPRequest,
       user: String,
       context: AuthenticationContext
-  ): Future[ToResponseMarshallable] =
+  ): Future[ToResponseMarshallable] = {
     breaker
       .withCircuitBreaker(conversation.getResponse(user, request, context))
       .map[ToResponseMarshallable] { response =>
         Marshal(response).to[Either[SOAPResponse, NodeSeq]].map {
           case Right(elm) =>
-            makeHttpResponse(
-              OK,
-              MediaTypes.`text/xml`,
-              config.mode,
-              Some(elm.toString())
+            makeResponse(
+              status = OK,
+              payload = Some(elm.toString()),
+              charset = MediaTypes.`text/xml`
             )
           case Left(InvalidRequest()) =>
-            makeHttpResponse(
-              BadRequest,
-              MediaTypes.`text/plain`,
-              config.mode,
-              Some("Invalid request")
+            makeResponse(
+              status = BadRequest,
+              payload = Some("Invalid request")
             )
           case _ =>
-            makeHttpResponse(
-              NoContent,
-              MediaTypes.`text/plain`,
-              config.mode,
-              None
+            makeResponse(
+              status = NoContent
             )
         }
       }
@@ -95,12 +92,12 @@ class Routes(
           log.error("Failed " + e.getLocalizedMessage, e)
           Future.successful(HttpResponse(InternalServerError))
       }
+  }
 
-  def makeHttpResponse(
+  def makeResponse(
       status: StatusCode,
-      charset: MediaType.WithOpenCharset,
-      mode: String,
-      payload: Option[String]
+      payload: Option[String] = None,
+      charset: MediaType.WithOpenCharset = MediaTypes.`text/plain`
   ) = HttpResponse(
     status = status,
     headers = payload
@@ -108,7 +105,7 @@ class Routes(
       .map(_ => immutable.Seq(RawHeader("SOAPAction", "")))
       .getOrElse(immutable.Seq.empty),
     entity = payload.map { p =>
-      mode match {
+      config.mode match {
         case "chunked" =>
           HttpEntity.Chunked(
             ContentType.WithCharset(charset, HttpCharsets.`UTF-8`),

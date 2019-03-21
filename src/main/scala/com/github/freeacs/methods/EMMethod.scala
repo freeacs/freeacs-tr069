@@ -6,7 +6,7 @@ import com.github.freeacs.config.SystemParameters._
 import com.github.freeacs.domain.unitParameter
 import com.github.freeacs.domain.unitParameter.ACSUnitParameter
 import com.github.freeacs.domain.unitTypeParameter.ACSUnitTypeParameter
-import com.github.freeacs.repositories.DaoService
+import com.github.freeacs.services.UnitService
 import com.github.freeacs.session.sessionState.SessionState
 import com.github.freeacs.session.sessionState.SessionState.History
 import com.github.freeacs.session.sessionState.SessionState.HistoryItem.{
@@ -27,7 +27,7 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
   def process(
       request: EmptyRequest,
       sessionState: SessionState,
-      services: DaoService
+      services: UnitService
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)] = {
     if (sessionState.history.isEmpty) {
       log.error(
@@ -67,7 +67,7 @@ object EMMethod extends AbstractMethod[EmptyRequest] {
   }
 
   private[this] def writeSystemParameters(
-      services: DaoService,
+      services: UnitService,
       state: SessionState
   ): Future[Int] = {
     services.createOrUpdateUnitParameters {

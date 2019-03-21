@@ -6,7 +6,7 @@ import akka.pattern.CircuitBreaker
 import akka.stream.ActorMaterializer
 import com.github.freeacs.session.{SessionCache, SessionService}
 import com.github.freeacs.config.Configuration
-import com.github.freeacs.repositories.DaoService
+import com.github.freeacs.services.UnitService
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.ExecutionContextExecutor
@@ -30,16 +30,14 @@ trait Server {
   )
 
   val cacheActor   = system.actorOf(SessionCache.props)
-  val services     = new DaoService(dbConfig)
+  val services     = new UnitService(dbConfig)
   val conversation = new SessionService(services, config, cacheActor)
+  val routes       = new Routes(breaker, services, config, conversation)
+  val server       = Http().bindAndHandle(routes.routes, hostname, port)
 
-  val routes = new Routes(breaker, services, config, conversation)
-
-  val server = Http().bindAndHandle(routes.routes, hostname, port)
-
+  // Shutdown logic
   StdIn.readLine()
   server.flatMap(_.unbind)
-
   system.terminate()
 
 }

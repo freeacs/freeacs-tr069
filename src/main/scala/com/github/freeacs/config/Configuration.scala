@@ -26,21 +26,21 @@ trait Configuration {
 object Configuration {
   def from(config: Config): Configuration =
     new Configuration {
-      val dbConfig     = DatabaseConfig.forConfig[JdbcProfile]("db", config)
-      private val conf = config.getConfig("server")
-      val responseTimeout: FiniteDuration =
-        conf.getDuration("response.timeout").toMillis millis
-      val actorTimeout: FiniteDuration =
-        conf.getDuration("actor.timeout").toMillis millis
-      val maxFailures: Int = conf.getInt("circuit-breaker.maxFailures")
-      val callTimeout: FiniteDuration =
-        conf.getDuration("circuit-breaker.callTimeout").toMillis millis
-      val resetTimeout: FiniteDuration =
-        conf.getDuration("circuit-breaker.resetTimeout").toMillis millis
-      val hostname: String   = conf.getString("http.host")
-      val port: Int          = conf.getInt("http.port")
-      val authMethod: String = conf.getString("auth.method")
-      val name: String       = conf.getString("name")
-      val mode               = conf.getString("http.mode")
+      val dbConfig        = DatabaseConfig.forConfig[JdbcProfile]("db", config)
+      private val conf    = config.getConfig("server")
+      val responseTimeout = getDuration(conf, "response.timeout")
+      val actorTimeout    = getDuration(conf, "actor.timeout")
+      val maxFailures     = conf.getInt("circuit-breaker.maxFailures")
+      val callTimeout     = getDuration(conf, "circuit-breaker.callTimeout")
+      val resetTimeout    = getDuration(conf, "circuit-breaker.resetTimeout")
+      val hostname        = conf.getString("http.host")
+      val port            = conf.getInt("http.port")
+      val authMethod      = conf.getString("auth.method")
+      val name            = conf.getString("name")
+      val mode            = conf.getString("http.mode")
     }
+
+  private def getDuration(config: Config, key: String): FiniteDuration = {
+    config.getDuration("actor.timeout").toMillis millis
+  }
 }

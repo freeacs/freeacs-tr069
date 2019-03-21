@@ -1,5 +1,5 @@
 package com.github.freeacs.methods
-import com.github.freeacs.repositories.DaoService
+import com.github.freeacs.services.UnitService
 import com.github.freeacs.session.sessionState.SessionState
 import com.github.freeacs.session.sessionState.SessionState.State.ExpectInformRequest
 import com.github.freeacs.xml.{EmptyResponse, SOAPRequest, SOAPResponse}
@@ -14,10 +14,10 @@ trait AbstractMethod[T <: SOAPRequest] {
   def process(
       request: T,
       state: SessionState,
-      services: DaoService
+      services: UnitService
   )(implicit ec: ExecutionContext): Future[(SessionState, SOAPResponse)]
 
-  protected[this] def resetConversation(
+  def resetConversation(
       sessionState: SessionState
   ): (SessionState, SOAPResponse) = {
     (

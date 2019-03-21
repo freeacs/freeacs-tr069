@@ -1,4 +1,4 @@
-package com.github.freeacs.repositories
+package com.github.freeacs.daos
 
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
