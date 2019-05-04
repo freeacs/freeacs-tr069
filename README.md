@@ -2,7 +2,7 @@
 
 This project aims to port mostly all relevant functionality from the current/old FreeACS stack. 
 
-Currently a work in progress.
+Currently *not* in progress. I am not yet sure if this will make a better tr069 server.
 
 Links:
 
